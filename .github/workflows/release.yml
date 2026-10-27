@@ -1,0 +1,59 @@
+name: Make Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag, for example v1.0.0'
+        required: true
+        default: 'v1.0.0'
+      prerelease:
+        description: 'Mark as pre-release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: 17
+          cache: 'gradle'
+
+      - run: chmod +x ./gradlew
+      - run: ./gradlew assembleStandardDebug
+
+      - name: Collect APKs
+        run: |
+          set -e
+          mkdir -p out
+          for f in app/build/outputs/apk/standard/debug/*.apk; do
+            name=$(basename "$f")
+            abi=$(echo "$name" | sed -E 's/.*standard-([^-]+(-[^-]+)?)-debug.*/\1/')
+            cp "$f" "out/OnlyPlay-${abi}-${{ inputs.tag }}.apk"
+          done
+          ls -lh out
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: OnlyPlay ${{ inputs.tag }}
+          body: |
+            OnlyPlay ${{ inputs.tag }}
+            Created by darkdesign69.
+            Most phones need the arm64-v8a file.
+          files: out/*.apk
+          prerelease: ${{ inputs.prerelease }}
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
