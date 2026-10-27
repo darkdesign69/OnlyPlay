@@ -658,12 +658,8 @@ fun PlayerControls(
             Modifier.constrainAs(playerPauseButton) {
               end.linkTo(parent.absoluteRight)
               start.linkTo(parent.absoluteLeft)
-              if (isPortrait) {
-                bottom.linkTo(bottomRightControls.top, spacing.large)
-              } else {
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-              }
+              top.linkTo(parent.top)
+              bottom.linkTo(parent.bottom)
             },
         ) {
           val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
@@ -1040,7 +1036,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait,
+          visible = false,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1129,19 +1125,14 @@ fun PlayerControls(
                 }
               )
               .constrainAs(bottomRightControls) {
-                if (isPortrait) {
-                  bottom.linkTo(parent.bottom, spacing.extraLarge)
-                  start.linkTo(parent.start, spacing.large)
-                  end.linkTo(parent.end, spacing.large)
-                  width = Dimension.fillToConstraints
-                } else {
-                  bottom.linkTo(seekbar.top, spacing.small)
-                  end.linkTo(parent.end, spacing.large)
-                }
+                // Floating controls: always at the top, under the title row
+                top.linkTo(topLeftControls.bottom, spacing.small)
+                start.linkTo(parent.start, spacing.large)
+                end.linkTo(parent.end, spacing.large)
+                width = Dimension.fillToConstraints
               },
         ) {
-          if (isPortrait) {
-            BottomPlayerControlsPortrait(
+          FloatingPlayerControls(
               buttons = portraitBottomButtons,
               chapters = chapters,
               currentChapter = currentChapter,
@@ -1158,29 +1149,10 @@ fun PlayerControls(
               viewModel = viewModel,
               activity = activity,
             )
-          } else {
-            BottomRightPlayerControlsLandscape(
-              buttons = bottomRightButtons,
-              chapters = chapters,
-              currentChapter = currentChapter,
-              isSpeedNonOne = isSpeedNonOne,
-              currentZoom = currentZoom,
-              aspect = aspect,
-              mediaTitle = mediaTitle,
-              hideBackground = hideBackground,
-              decoder = decoder,
-              playbackSpeed = playbackSpeed ?: 1f,
-              onBackPress = onBackPress,
-              onOpenSheet = onOpenSheet,
-              onOpenPanel = onOpenPanel,
-              viewModel = viewModel,
-              activity = activity,
-            )
-          }
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown,
+          visible = false,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +

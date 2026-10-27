@@ -150,7 +150,7 @@ data class ControlLayoutEditorScreen(
           ControlRegion.TOP_RIGHT -> "Edit Top Right"
           ControlRegion.BOTTOM_RIGHT -> "Edit Bottom Right"
           ControlRegion.BOTTOM_LEFT -> "Edit Bottom Left"
-          ControlRegion.PORTRAIT_BOTTOM -> "Edit Portrait Bottom"
+          ControlRegion.PORTRAIT_BOTTOM -> "Edit Floating Controls"
         }
       }
 

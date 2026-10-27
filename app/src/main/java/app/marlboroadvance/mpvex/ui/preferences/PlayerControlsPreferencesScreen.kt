@@ -128,46 +128,9 @@ object PlayerControlsPreferencesScreen : Screen {
               .fillMaxSize()
               .padding(padding),
         ) {
-          // Landscape Controls Section
-          item {
-            PreferenceSectionHeader(title = "Landscape Controls")
-          }
-          
-          item {
-            PreferenceCard {
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_top_right_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.TOP_RIGHT))
-                },
-              )
-              PreferenceIconSummary(buttons = topRightButtons)
-              
-              PreferenceDivider()
-              
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_bottom_right_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_RIGHT))
-                },
-              )
-              PreferenceIconSummary(buttons = bottomRightButtons)
-              
-              PreferenceDivider()
-              
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_bottom_left_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_LEFT))
-                },
-              )
-              PreferenceIconSummary(buttons = bottomLeftButtons)
-            }
-          }
-          
           // Portrait Controls Section
           item {
-            PreferenceSectionHeader(title = "Portrait Controls")
+            PreferenceSectionHeader(title = "Floating Controls")
           }
 
           item {

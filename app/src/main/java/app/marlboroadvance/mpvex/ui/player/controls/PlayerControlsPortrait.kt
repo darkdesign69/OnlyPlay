@@ -197,3 +197,55 @@ fun BottomPlayerControlsPortrait(
   }
 }
 
+
+/** Floating control bar: sits at the top of the player in both portrait and landscape. */
+@Composable
+fun FloatingPlayerControls(
+  buttons: List<PlayerButton>,
+  chapters: List<Segment>,
+  currentChapter: Int?,
+  isSpeedNonOne: Boolean,
+  currentZoom: Float,
+  aspect: VideoAspect,
+  mediaTitle: String?,
+  hideBackground: Boolean,
+  decoder: app.marlboroadvance.mpvex.ui.player.Decoder,
+  playbackSpeed: Float,
+  onBackPress: () -> Unit,
+  onOpenSheet: (Sheets) -> Unit,
+  onOpenPanel: (Panels) -> Unit,
+  viewModel: PlayerViewModel,
+  activity: PlayerActivity,
+) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .horizontalScroll(rememberScrollState()),
+    horizontalArrangement = Arrangement.Center,
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    ControlsGroup {
+      buttons.forEach { button ->
+        RenderPlayerButton(
+          button = button,
+          chapters = chapters,
+          currentChapter = currentChapter,
+          isPortrait = true,
+          isSpeedNonOne = isSpeedNonOne,
+          currentZoom = currentZoom,
+          aspect = aspect,
+          mediaTitle = mediaTitle,
+          hideBackground = hideBackground,
+          onBackPress = onBackPress,
+          onOpenSheet = onOpenSheet,
+          onOpenPanel = onOpenPanel,
+          viewModel = viewModel,
+          activity = activity,
+          decoder = decoder,
+          playbackSpeed = playbackSpeed,
+          buttonSize = 44.dp,
+        )
+      }
+    }
+  }
+}
