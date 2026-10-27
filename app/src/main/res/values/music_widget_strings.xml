@@ -1,0 +1,20 @@
+<resources>
+  <string name="music_widget_card_label" translatable="false">Card</string>
+  <string name="music_widget_md2_label" translatable="false">MD2</string>
+  <string name="music_widget_md3_label" translatable="false">MD3</string>
+  <string name="music_widget_md4_label" translatable="false">MD4</string>
+  <string name="music_widget_md5_label" translatable="false">MD5</string>
+  <string name="music_widget_text_label" translatable="false">Text</string>
+  <string name="music_widget_textimage_label" translatable="false">Text with image</string>
+  <string name="music_widget_description" translatable="false">Play and control your music. Tap anywhere except the buttons to open the player.</string>
+  <string name="music_widget_idle_title" translatable="false">OnlyPlay</string>
+  <string name="music_widget_idle_artist" translatable="false">Tap play to start music</string>
+  <string name="music_widget_prev" translatable="false">Previous</string>
+  <string name="music_widget_next" translatable="false">Next</string>
+  <string name="music_widget_play_pause" translatable="false">Play or pause</string>
+  <string name="music_widget_open" translatable="false">Open app</string>
+  <string name="music_widget_favourite" translatable="false">Favourite</string>
+  <string name="music_widget_repeat" translatable="false">Repeat / play all</string>
+  <string name="music_widget_shuffle" translatable="false">Shuffle</string>
+  <!-- names of earlier widget sets, kept because older files may still point at them -->
+</resources>
