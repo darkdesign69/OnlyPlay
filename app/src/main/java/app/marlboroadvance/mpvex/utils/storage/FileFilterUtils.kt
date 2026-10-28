@@ -1,6 +1,7 @@
 package app.marlboroadvance.mpvex.utils.storage
 
 import android.util.Log
+import app.marlboroadvance.mpvex.preferences.BrowserPreferences
 import java.io.File
 
 /**
@@ -9,6 +10,27 @@ import java.io.File
  */
 object FileFilterUtils {
   private const val TAG = "FileFilterUtils"
+
+  /** Show files and folders whose name starts with a dot. */
+  @Volatile
+  var showHidden: Boolean = false
+
+  /** Skip folders that contain a .nomedia file. */
+  @Volatile
+  var recognizeNoMedia: Boolean = true
+
+  fun configure(showHidden: Boolean, recognizeNoMedia: Boolean) {
+    this.showHidden = showHidden
+    this.recognizeNoMedia = recognizeNoMedia
+  }
+
+  /** Reads the two switches from the app settings. */
+  fun syncFromPreferences() {
+    runCatching {
+      val prefs = org.koin.core.context.GlobalContext.get().get<BrowserPreferences>()
+      configure(prefs.showHiddenFiles.get(), prefs.recognizeNoMedia.get())
+    }
+  }
 
   // Folders to skip during scanning (system/cache folders)
   private val SKIP_FOLDERS = setOf(
@@ -49,16 +71,18 @@ object FileFilterUtils {
    */
   fun shouldSkipFolder(folder: File): Boolean {
     val name = folder.name.lowercase()
-    if (name.startsWith(".") || SKIP_FOLDERS.contains(name)) {
+    if (name.startsWith(".")) {
+      if (!showHidden) return true
+    } else if (SKIP_FOLDERS.contains(name)) {
       return true
     }
-    return hasNoMediaFile(folder)
+    return recognizeNoMedia && hasNoMediaFile(folder)
   }
 
   /**
    * Checks if a file should be skipped during file listing
    */
   fun shouldSkipFile(file: File): Boolean {
-    return file.name.startsWith(".")
+    return !showHidden && file.name.startsWith(".")
   }
 }

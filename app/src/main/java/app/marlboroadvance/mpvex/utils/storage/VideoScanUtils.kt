@@ -39,13 +39,15 @@ object VideoScanUtils {
         folderPath: String
     ): List<Video> = withContext(Dispatchers.IO) {
         val videosMap = mutableMapOf<String, Video>()
+        FileFilterUtils.syncFromPreferences()
         
         // Try MediaStore first (fast)
         scanVideosFromMediaStore(context, folderPath, videosMap)
         
         // Fallback to filesystem if MediaStore returned nothing
         val folder = File(folderPath)
-        if (folder.exists() && folder.canRead() && videosMap.isEmpty()) {
+        val needFileScan = videosMap.isEmpty() || FileFilterUtils.showHidden || !FileFilterUtils.recognizeNoMedia
+        if (folder.exists() && folder.canRead() && needFileScan) {
             scanVideosFromFileSystem(context, folder, videosMap)
         }
         
@@ -164,6 +166,7 @@ object VideoScanUtils {
             for (file in files) {
                 try {
                     if (!file.isFile) continue
+                    if (FileFilterUtils.shouldSkipFile(file)) continue
                     
                     val extension = file.extension.lowercase(Locale.getDefault())
                     if (!FileTypeUtils.VIDEO_EXTENSIONS.contains(extension)) continue

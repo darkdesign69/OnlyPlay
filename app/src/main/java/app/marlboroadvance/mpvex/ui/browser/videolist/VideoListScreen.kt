@@ -101,6 +101,7 @@ import app.marlboroadvance.mpvex.ui.browser.dialogs.GridColumnSelector
 import app.marlboroadvance.mpvex.ui.browser.dialogs.LoadingDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.RenameDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.SortDialog
+import app.marlboroadvance.mpvex.ui.browser.dialogs.rememberAdvancedToggles
 import app.marlboroadvance.mpvex.ui.browser.dialogs.ViewModeSelector
 import app.marlboroadvance.mpvex.ui.browser.dialogs.VisibilityToggle
 import app.marlboroadvance.mpvex.ui.browser.fab.FabScrollHelper
@@ -1111,19 +1112,7 @@ private fun VideoSortDialog(
           onCheckedChange = { browserPreferences.showDateChip.set(it) },
         ),
       ),
-    advancedToggles =
-      listOf(
-        VisibilityToggle(
-          label = "Display length over thumbnail",
-          checked = showDurationOverlay,
-          onCheckedChange = { browserPreferences.showDurationOverlay.set(it) },
-        ),
-        VisibilityToggle(
-          label = "Show watch progress bar",
-          checked = showProgressBar,
-          onCheckedChange = { browserPreferences.showProgressBar.set(it) },
-        ),
-      ),
+    advancedToggles = rememberAdvancedToggles(),
     folderGridColumnSelector = folderGridColumnSelector,
     videoGridColumnSelector = videoGridColumnSelector,
   )

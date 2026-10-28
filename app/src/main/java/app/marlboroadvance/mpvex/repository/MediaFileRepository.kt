@@ -83,6 +83,7 @@ object MediaFileRepository {
    */
   suspend fun getAllVideoFolders(context: Context): List<VideoFolder> =
     withContext(Dispatchers.IO) {
+      FileFilterUtils.syncFromPreferences()
       val now = System.currentTimeMillis()
       cachedFolders?.let { cached ->
         if (now - cacheTimestamp < CACHE_TTL_MS) {
@@ -170,6 +171,19 @@ object MediaFileRepository {
         }
       } catch (e: Exception) {
         Log.e(TAG, "Error scanning external volumes", e)
+      }
+
+      // 3. With "Show hidden files" on or ".nomedia" ignored, MediaStore does not know those
+      //    folders, so also look through internal storage directly.
+      if (FileFilterUtils.showHidden || !FileFilterUtils.recognizeNoMedia) {
+        try {
+          val root = Environment.getExternalStorageDirectory()
+          if (root.exists() && root.canRead()) {
+            scanExternalVolumeShallow(root, foldersMap, maxDepth = 6)
+          }
+        } catch (e: Exception) {
+          Log.e(TAG, "Error scanning internal storage for hidden folders", e)
+        }
       }
 
       val result = foldersMap.values.map { acc ->
@@ -413,6 +427,7 @@ object MediaFileRepository {
   ): Result<List<FileSystemItem>> =
     withContext(Dispatchers.IO) {
       try {
+        FileFilterUtils.syncFromPreferences()
         val directory = File(path)
 
         if (!directory.exists()) {

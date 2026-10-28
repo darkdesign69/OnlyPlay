@@ -1503,6 +1503,7 @@ fun FileSystemSortDialog(
     videoGridColumnSelector = null,
     enableViewModeOptions = isAtRoot,
     enableLayoutModeOptions = false, // Disabled/grayed out
+    advancedToggles = app.marlboroadvance.mpvex.ui.browser.dialogs.rememberAdvancedToggles(),
     visibilityToggles = listOf(
       VisibilityToggle(
         label = "Video Thumbnails",

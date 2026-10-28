@@ -44,6 +44,8 @@ class BrowserPreferences(
   val showSubtitleIndicator = preferenceStore.getBoolean("show_subtitle_indicator", false)
   val showProgressBar = preferenceStore.getBoolean("show_progress_bar", true)
   val showDurationOverlay = preferenceStore.getBoolean("show_duration_overlay", true)
+  val showHiddenFiles = preferenceStore.getBoolean("show_hidden_files", false)
+  val recognizeNoMedia = preferenceStore.getBoolean("recognize_nomedia", true)
   val mediaLayoutMode = preferenceStore.getEnum("media_layout_mode", MediaLayoutMode. LIST)
 
   // Visibility preferences for folder card chips

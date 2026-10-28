@@ -1055,6 +1055,7 @@ private fun FolderSortDialog(
         onCheckedChange = { browserPreferences.showDateChip.set(it) },
       ),
     ),
+    advancedToggles = app.marlboroadvance.mpvex.ui.browser.dialogs.rememberAdvancedToggles(),
     folderGridColumnSelector = folderGridColumnSelector,
     videoGridColumnSelector = videoGridColumnSelector,
   )
