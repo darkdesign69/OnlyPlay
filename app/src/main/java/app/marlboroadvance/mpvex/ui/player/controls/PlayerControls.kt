@@ -162,7 +162,8 @@ fun PlayerControls(
   val audioPreferences = koinInject<AudioPreferences>()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
-  val mxLayout by playerPreferences.mxPlayerLayout.collectAsState()
+  // MX Player style layout is always on, in portrait and landscape
+  val mxLayout = true
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
@@ -279,7 +280,7 @@ fun PlayerControls(
       val isPortrait by remember(configuration) {
         derivedStateOf { configuration.orientation == ORIENTATION_PORTRAIT }
       }
-      val mxPortrait = mxLayout && isPortrait
+      val mxPortrait = mxLayout
 
       ConstraintLayout(
         modifier =

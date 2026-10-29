@@ -106,6 +106,9 @@ fun MxPortraitControls(
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val landscape =
+    androidx.compose.ui.platform.LocalConfiguration.current.orientation ==
+      android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
   val shortcutButtons = remember(buttons) { buttons.filter { it !in MX_EXCLUDED_BUTTONS } }
   var seeking by remember { mutableStateOf(false) }
@@ -125,7 +128,7 @@ fun MxPortraitControls(
         modifier =
           Modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(if (landscape) 48.dp else 56.dp)
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
       ) {
@@ -186,7 +189,7 @@ fun MxPortraitControls(
         Modifier
           .fillMaxWidth()
           .horizontalScroll(rememberScrollState())
-          .padding(horizontal = 12.dp, vertical = 12.dp),
+          .padding(horizontal = 12.dp, vertical = if (landscape) 4.dp else 12.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -226,7 +229,7 @@ fun MxPortraitControls(
               colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f)),
             ),
           ).windowInsetsPadding(WindowInsets.navigationBars)
-          .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
+          .padding(start = 20.dp, end = 20.dp, top = if (landscape) 4.dp else 12.dp, bottom = if (landscape) 4.dp else 8.dp),
     ) {
       MxThinSeekBar(
         position = position,
@@ -287,13 +290,13 @@ fun MxPortraitControls(
         modifier =
           Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(top = if (landscape) 0.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically,
       ) {
         Spacer(modifier = Modifier.weight(1f))
 
         Row(
-          horizontalArrangement = Arrangement.spacedBy(28.dp),
+          horizontalArrangement = Arrangement.spacedBy(if (landscape) 20.dp else 28.dp),
           verticalAlignment = Alignment.CenterVertically,
         ) {
           val hasPrevious = viewModel.hasPrevious()
@@ -310,7 +313,7 @@ fun MxPortraitControls(
               imageVector = Icons.Default.SkipPrevious,
               contentDescription = "Previous",
               tint = Color.White.copy(alpha = if (hasPrevious) 1f else 0.38f),
-              modifier = Modifier.size(40.dp),
+              modifier = Modifier.size(if (landscape) 32.dp else 40.dp),
             )
           }
 
@@ -319,13 +322,13 @@ fun MxPortraitControls(
               clickEvent()
               viewModel.pauseUnpause()
             },
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(if (landscape) 52.dp else 64.dp),
           ) {
             Icon(
               imageVector = if (paused) Icons.Default.PlayArrow else Icons.Default.Pause,
               contentDescription = if (paused) "Play" else "Pause",
               tint = Color.White,
-              modifier = Modifier.size(56.dp),
+              modifier = Modifier.size(if (landscape) 44.dp else 56.dp),
             )
           }
 
@@ -340,7 +343,7 @@ fun MxPortraitControls(
               imageVector = Icons.Default.SkipNext,
               contentDescription = "Next",
               tint = Color.White.copy(alpha = if (hasNext) 1f else 0.38f),
-              modifier = Modifier.size(40.dp),
+              modifier = Modifier.size(if (landscape) 32.dp else 40.dp),
             )
           }
         }

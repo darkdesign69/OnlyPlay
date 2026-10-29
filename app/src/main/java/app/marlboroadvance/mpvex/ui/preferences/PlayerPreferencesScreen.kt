@@ -387,16 +387,6 @@ object PlayerPreferencesScreen : Screen {
           
           item {
             PreferenceCard {
-              val mxPlayerLayout by preferences.mxPlayerLayout.collectAsState()
-              SwitchPreference(
-                value = mxPlayerLayout,
-                onValueChange = preferences.mxPlayerLayout::set,
-                title = { Text(stringResource(R.string.pref_player_display_mx_layout)) },
-                summary = { Text(stringResource(R.string.pref_player_display_mx_layout_summary)) },
-              )
-
-              PreferenceDivider()
-
               val keepSystemBarsVisible by preferences.keepSystemBarsVisible.collectAsState()
               SwitchPreference(
                 value = keepSystemBarsVisible,
