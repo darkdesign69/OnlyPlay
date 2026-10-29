@@ -80,8 +80,8 @@ fun otoPalette(seed: Color, dark: Boolean): OtoPalette {
   val hue = lch[2]
   val bg = fromLch(if (dark) 12f else 93f, min(chroma, 36f), hue)
   val primary = fromLch(if (dark) 80f else 40f, chroma, hue)
-  val glow = fromLch(if (dark) 55f else 75f, chroma, hue)
-  val glow2 = fromLch(if (dark) 58f else 78f, chroma, (hue + 60f) % 360f)
+  val glow = fromLch(if (dark) 50f else 70f, 110f, hue)
+  val glow2 = fromLch(if (dark) 52f else 72f, 110f, (hue + 65f) % 360f)
   return OtoPalette(bg, primary, glow, glow2)
 }
 
@@ -236,7 +236,7 @@ fun NowPlayingBackdrop(
         }
       }
       OtoTheme.GLOW -> {
-        Box(Modifier.fillMaxSize().background(Color(0xFF050505)))
+        Box(Modifier.fillMaxSize().background(Color.Black))
         GlowLayers(palette.glow, palette.glow2, playing)
       }
     }
@@ -262,17 +262,17 @@ private fun GlowLayers(color: Color, color2: Color, playing: Boolean) {
   Canvas(Modifier.fillMaxSize()) {
     val w = size.width
     val h = size.height
-    val radius = max(w, h) * 0.95f
+    val radius = h * 0.55f
     val ang = (p * 2f * PI).toFloat()
     val centers =
       listOf(
-        Offset(w * (0.5f + 0.55f * cos(ang)), h * (0.5f + 0.40f * sin(ang))) to color2,
-        Offset(w * (0.5f - 0.55f * cos(ang + 0.6f)), h * (0.5f - 0.40f * sin(ang + 0.6f))) to color,
+        Offset(w * (0.5f + 0.45f * cos(ang)), h * (0.72f + 0.18f * sin(ang))) to color2,
+        Offset(w * (0.5f - 0.45f * cos(ang + 0.6f)), h * (0.80f - 0.18f * sin(ang + 0.6f))) to color,
       )
     for ((c, col) in centers) {
       val brush =
         Brush.radialGradient(
-          colorStops = Array(glowStops.size) { i -> glowStops[i].first to col.copy(alpha = glowStops[i].second * 0.9f) },
+          colorStops = Array(glowStops.size) { i -> glowStops[i].first to col.copy(alpha = glowStops[i].second) },
           center = c,
           radius = radius,
         )
