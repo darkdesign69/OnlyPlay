@@ -1,5 +1,7 @@
 name: Apply Patch and Build APK
 
+run-name: "${{ github.event_name == 'push' && format('Apply {0} {1}', join(github.event.head_commit.added, ', '), join(github.event.head_commit.modified, ', ')) || 'Build current code' }}"
+
 on:
   push:
     paths:
