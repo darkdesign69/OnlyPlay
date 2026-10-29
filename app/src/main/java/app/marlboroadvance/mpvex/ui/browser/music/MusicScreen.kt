@@ -1359,7 +1359,7 @@ private fun NowPlaying(
     value =
       withContext(Dispatchers.IO) {
         val b = loadArt(context, t, 64)
-        if (b != null) Color(Bitmap.createScaledBitmap(b, 1, 1, true).getPixel(0, 0)) else Color.Transparent
+        if (b != null) dominantColor(b) else Color.Transparent
       }
   }
   val animAccent by animateColorAsState(accent, label = "accent")

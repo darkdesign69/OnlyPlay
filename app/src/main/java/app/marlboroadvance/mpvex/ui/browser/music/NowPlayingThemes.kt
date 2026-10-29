@@ -75,11 +75,11 @@ class OtoPalette(
 fun otoPalette(seed: Color, dark: Boolean): OtoPalette {
   val s = if (seed == Color.Transparent) Color(0xFF6750A4) else seed
   val lch = toLch(s)
-  val chroma = max(lch[1], 16f)
+  val chroma = max(lch[1], 45f)
   val hue = lch[2]
-  val bg = fromLch(if (dark) 8f else 95f, min(chroma, 14f), hue)
+  val bg = fromLch(if (dark) 12f else 93f, min(chroma, 36f), hue)
   val primary = fromLch(if (dark) 80f else 40f, chroma, hue)
-  val glow = fromLch(if (dark) 60f else 80f, chroma, hue)
+  val glow = fromLch(if (dark) 55f else 75f, chroma, hue)
   return OtoPalette(bg, primary, glow)
 }
 
@@ -260,7 +260,7 @@ private fun GlowLayers(color: Color, playing: Boolean) {
   Canvas(Modifier.fillMaxSize()) {
     val w = size.width
     val h = size.height
-    val radius = max(w, h) * 0.75f
+    val radius = max(w, h) * 1.0f
     val ang = (p * 2f * PI).toFloat()
     val centers =
       listOf(
@@ -270,11 +270,39 @@ private fun GlowLayers(color: Color, playing: Boolean) {
     for (c in centers) {
       val brush =
         Brush.radialGradient(
-          colorStops = Array(glowStops.size) { i -> glowStops[i].first to color.copy(alpha = glowStops[i].second * 0.5f) },
+          colorStops = Array(glowStops.size) { i -> glowStops[i].first to color.copy(alpha = glowStops[i].second * 0.85f) },
           center = c,
           radius = radius,
         )
       drawRect(brush = brush)
     }
+  }
+}
+
+/** Picks a vivid representative colour of the art (plain averages are usually grey and wash out). */
+fun dominantColor(src: Bitmap): Color {
+  val b = Bitmap.createScaledBitmap(src, 24, 24, true)
+  var wr = 0.0
+  var wg = 0.0
+  var wb = 0.0
+  var wt = 0.0
+  var ar = 0.0
+  var ag = 0.0
+  var ab = 0.0
+  val hsv = FloatArray(3)
+  for (y in 0 until 24) for (x in 0 until 24) {
+    val p = b.getPixel(x, y)
+    val r = (p shr 16) and 0xFF
+    val g = (p shr 8) and 0xFF
+    val bl = p and 0xFF
+    ar += r; ag += g; ab += bl
+    android.graphics.Color.RGBToHSV(r, g, bl, hsv)
+    val w = (hsv[1] * hsv[1] * (0.2f + hsv[2])).toDouble()
+    wr += r * w; wg += g * w; wb += bl * w; wt += w
+  }
+  return if (wt > 0.5) {
+    Color((wr / wt / 255.0).toFloat(), (wg / wt / 255.0).toFloat(), (wb / wt / 255.0).toFloat())
+  } else {
+    Color((ar / 576 / 255.0).toFloat(), (ag / 576 / 255.0).toFloat(), (ab / 576 / 255.0).toFloat())
   }
 }
