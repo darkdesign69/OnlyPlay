@@ -163,6 +163,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -1370,10 +1371,17 @@ private fun NowPlaying(
   val fav = t.id in MusicController.favorites
   val duration = t.durationMs.coerceAtLeast(1L).toFloat()
   val baseColor = solidSurface()
-  val useBlur = MusicSettings.nowPlayingBg == 3 || MusicSettings.nowPlayingBg == 4
-  val blurBmp by produceState<Bitmap?>(null, t.id, MusicSettings.nowPlayingBg) {
-    value = if (useBlur) withContext(Dispatchers.IO) { loadArt(context, t, 256) } else null
+  val npTheme = MusicSettings.nowPlayingBg
+  val useBlur = npTheme == OtoTheme.BLUR || npTheme == OtoTheme.GRADIENT_BLUR
+  val blurBmp by produceState<Bitmap?>(null, t.id, npTheme) {
+    value =
+      if (useBlur) {
+        withContext(Dispatchers.IO) { loadArt(context, t, 256)?.let { otoBlurBitmap(it) } }
+      } else {
+        null
+      }
   }
+  val npPalette = otoPalette(animAccent, baseColor.luminance() < 0.5f)
   val coverFraction =
     when (MusicSettings.coverSize) {
       1 -> 0.82f
@@ -1382,44 +1390,24 @@ private fun NowPlaying(
     }
 
   val npCs = MaterialTheme.colorScheme
-  val npApprox =
-    when (MusicSettings.nowPlayingBg) {
-      1 -> animAccent.copy(alpha = 0.75f).compositeOver(baseColor)
-      2 -> lerp(animAccent.copy(alpha = 0.6f).compositeOver(baseColor), baseColor, 0.5f)
-      3 -> animAccent.copy(alpha = 0.45f).compositeOver(baseColor)
-      4 -> lerp(animAccent.copy(alpha = 0.6f).compositeOver(baseColor), baseColor, 0.5f)
-      5 -> animAccent.copy(alpha = 0.3f).compositeOver(baseColor)
-      6 -> lerp(baseColor, npCs.primary, 0.25f)
-      else -> baseColor
+  val npOn =
+    when {
+      npTheme == OtoTheme.DEFAULT -> npCs.onSurface
+      OtoTheme.forcesLightText(npTheme) -> Color.White
+      npPalette.background.luminance() > 0.5f -> Color(0xFF121212)
+      else -> Color.White
     }
-  val npOn = if (npApprox.luminance() > 0.5f) Color(0xFF121212) else Color.White
   val npScheme = npCs.copy(onSurface = npOn, onSurfaceVariant = npOn.copy(alpha = 0.78f), outline = npOn.copy(alpha = 0.65f))
   MaterialTheme(colorScheme = npScheme) {
   Surface(modifier = Modifier.fillMaxSize(), color = baseColor, contentColor = npOn) {
-    val artBg = blurBmp
     Box(modifier = Modifier.fillMaxSize()) {
-    if (useBlur && artBg != null) {
-      Image(
-        bitmap = artBg.asImageBitmap(),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxSize().blur((MusicSettings.blurAmount.coerceIn(5, 100) / 2).dp),
-      )
-      Box(modifier = Modifier.fillMaxSize().background(baseColor.copy(alpha = 0.55f)))
+    if (npTheme != OtoTheme.DEFAULT) {
+      NowPlayingBackdrop(npTheme, blurBmp, npPalette, MusicController.isPlaying)
     }
     Column(
       modifier =
         Modifier
           .fillMaxSize()
-          .then(
-            when (MusicSettings.nowPlayingBg) {
-              1 -> Modifier.background(animAccent.copy(alpha = 0.75f).compositeOver(baseColor))
-              2, 4 -> Modifier.background(Brush.verticalGradient(listOf(animAccent.copy(alpha = 0.6f), baseColor)))
-              5 -> Modifier.background(Brush.radialGradient(listOf(animAccent.copy(alpha = 0.55f), baseColor), radius = 1100f))
-              6 -> Modifier.background(lerp(baseColor, MaterialTheme.colorScheme.primary, 0.25f))
-              else -> Modifier
-            },
-          )
           .pointerInput(Unit) {
             // swipe down to close Now playing
             var dy = 0f
@@ -1490,7 +1478,15 @@ private fun NowPlaying(
                 translationX = dragX.value * 0.7f
                 alpha = 1f - (kotlin.math.abs(dragX.value) / 900f).coerceAtMost(0.4f)
               },
-          ) { tr -> TrackArt(tr, 800, Modifier.fillMaxWidth(coverFraction).aspectRatio(1f), RoundedCornerShape(28.dp)) }
+          ) { tr -> TrackArt(
+            tr,
+            800,
+            Modifier
+              .fillMaxWidth(coverFraction)
+              .aspectRatio(1f)
+              .shadow(OtoTheme.coverElevation(npTheme), RoundedCornerShape(OtoTheme.coverRadius(npTheme))),
+            RoundedCornerShape(OtoTheme.coverRadius(npTheme)),
+          ) }
         }
       }
       Spacer(Modifier.height(20.dp))

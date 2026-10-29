@@ -403,9 +403,6 @@ private fun NowPlayingPage() {
         upd { MusicSettings.nowPlayingBg = it }
       }
     }
-    if (MusicSettings.nowPlayingBg == 3 || MusicSettings.nowPlayingBg == 4) {
-      item { OtoSlider("Blur amount", "Needs Android 12 or newer to blur", MusicSettings.blurAmount, 5..100) { upd { MusicSettings.blurAmount = it } } }
-    }
     item {
       OtoSwitch("Show song info", "Show song information such as file format, bitrate and frequency in the main player", MusicSettings.songInfo) {
         upd { MusicSettings.songInfo = it }
