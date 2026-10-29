@@ -70,6 +70,7 @@ class OtoPalette(
   val background: Color,
   val primary: Color,
   val glow: Color,
+  val glow2: Color,
 )
 
 fun otoPalette(seed: Color, dark: Boolean): OtoPalette {
@@ -80,7 +81,8 @@ fun otoPalette(seed: Color, dark: Boolean): OtoPalette {
   val bg = fromLch(if (dark) 12f else 93f, min(chroma, 36f), hue)
   val primary = fromLch(if (dark) 80f else 40f, chroma, hue)
   val glow = fromLch(if (dark) 55f else 75f, chroma, hue)
-  return OtoPalette(bg, primary, glow)
+  val glow2 = fromLch(if (dark) 58f else 78f, chroma, (hue + 60f) % 360f)
+  return OtoPalette(bg, primary, glow, glow2)
 }
 
 private fun lin(c: Float): Float = if (c <= 0.04045f) c / 12.92f else ((c + 0.055f) / 1.055f).pow(2.4f)
@@ -234,8 +236,8 @@ fun NowPlayingBackdrop(
         }
       }
       OtoTheme.GLOW -> {
-        Box(Modifier.fillMaxSize().background(palette.background))
-        GlowLayers(palette.glow, playing)
+        Box(Modifier.fillMaxSize().background(Color(0xFF050505)))
+        GlowLayers(palette.glow, palette.glow2, playing)
       }
     }
     if (theme == OtoTheme.GRADIENT || theme == OtoTheme.GRADIENT_BLUR) {
@@ -246,7 +248,7 @@ fun NowPlayingBackdrop(
 }
 
 @Composable
-private fun GlowLayers(color: Color, playing: Boolean) {
+private fun GlowLayers(color: Color, color2: Color, playing: Boolean) {
   val transition = rememberInfiniteTransition(label = "glow")
   val running by
     transition.animateFloat(
@@ -260,17 +262,17 @@ private fun GlowLayers(color: Color, playing: Boolean) {
   Canvas(Modifier.fillMaxSize()) {
     val w = size.width
     val h = size.height
-    val radius = max(w, h) * 1.0f
+    val radius = max(w, h) * 0.95f
     val ang = (p * 2f * PI).toFloat()
     val centers =
       listOf(
-        Offset(w * (0.5f + 0.32f * cos(ang)), h * (0.38f + 0.22f * sin(ang))),
-        Offset(w * (0.5f - 0.32f * cos(ang)), h * (0.62f - 0.22f * sin(ang))),
+        Offset(w * (0.5f + 0.55f * cos(ang)), h * (0.5f + 0.40f * sin(ang))) to color2,
+        Offset(w * (0.5f - 0.55f * cos(ang + 0.6f)), h * (0.5f - 0.40f * sin(ang + 0.6f))) to color,
       )
-    for (c in centers) {
+    for ((c, col) in centers) {
       val brush =
         Brush.radialGradient(
-          colorStops = Array(glowStops.size) { i -> glowStops[i].first to color.copy(alpha = glowStops[i].second * 0.85f) },
+          colorStops = Array(glowStops.size) { i -> glowStops[i].first to col.copy(alpha = glowStops[i].second * 0.9f) },
           center = c,
           radius = radius,
         )
