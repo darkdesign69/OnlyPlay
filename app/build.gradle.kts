@@ -29,6 +29,15 @@ android {
     buildConfigField("int", "GIT_COUNT", getCommitCount())
   }
 
+  signingConfigs {
+    create("onlyplayDebug") {
+      storeFile = file("onlyplay-debug.keystore")
+      storePassword = "onlyplay123"
+      keyAlias = "onlyplay"
+      keyPassword = "onlyplay123"
+    }
+  }
+
   flavorDimensions += "distribution"
 
   productFlavors {
@@ -93,6 +102,7 @@ android {
     }
 
     named("debug") {
+      signingConfig = signingConfigs.getByName("onlyplayDebug")
       applicationIdSuffix = ".debug"
       versionNameSuffix = "-${getCommitCount()}"
     }
