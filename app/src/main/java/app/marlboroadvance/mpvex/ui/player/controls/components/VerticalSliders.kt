@@ -34,13 +34,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.marlboroadvance.mpvex.R
+import app.marlboroadvance.mpvex.preferences.PlayerPreferences
+import app.marlboroadvance.mpvex.preferences.preference.collectAsState
+import app.marlboroadvance.mpvex.ui.player.SliderColorScheme
 import app.marlboroadvance.mpvex.ui.theme.spacing
+import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
 fun percentage(
@@ -143,11 +151,15 @@ fun VerticalSlider(
   }
 }
 
-/** Tall white pill with a speaker / sun icon underneath. Transparent: it floats over the video. */
+/**
+ * Tall pill bar with a gradient (white at the bottom, [topColor] at the top), a number above it and an
+ * icon below it. The gradient always spans the whole bar and is revealed as the level goes up.
+ */
 @Composable
 private fun PillSlider(
   fraction: Float,
-  icon: ImageVector,
+  topColor: Color,
+  iconRes: Int,
   label: String,
   modifier: Modifier = Modifier,
 ) {
@@ -164,29 +176,35 @@ private fun PillSlider(
     Text(
       text = label,
       color = Color.White,
-      style = MaterialTheme.typography.labelMedium,
+      style = MaterialTheme.typography.labelLarge,
       textAlign = TextAlign.Center,
     )
     Box(
       modifier =
         Modifier
-          .width(30.dp)
-          .height(150.dp)
-          .clip(RoundedCornerShape(15.dp))
-          .background(Color.White.copy(alpha = 0.28f)),
-      contentAlignment = Alignment.BottomCenter,
+          .width(26.dp)
+          .height(190.dp)
+          .clip(RoundedCornerShape(13.dp))
+          .background(Color.White.copy(alpha = 0.22f)),
     ) {
       Box(
         modifier =
           Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(animatedFraction)
-            .clip(RoundedCornerShape(15.dp))
-            .background(Color.White),
+            .fillMaxSize()
+            .drawWithContent {
+              clipRect(top = size.height * (1f - animatedFraction)) {
+                this@drawWithContent.drawContent()
+              }
+            }
+            .background(
+              Brush.verticalGradient(
+                colors = listOf(topColor, Color.White),
+              ),
+            ),
       )
     }
     Icon(
-      imageVector = icon,
+      painter = painterResource(iconRes),
       contentDescription = null,
       tint = Color.White,
       modifier = Modifier.size(28.dp),
@@ -201,17 +219,22 @@ fun BrightnessSlider(
   modifier: Modifier = Modifier,
 ) {
   val fraction = percentage(brightness.coerceIn(range), range)
+  val sliderPrefs = koinInject<PlayerPreferences>()
+  val scheme by sliderPrefs.sliderColorScheme.collectAsState()
+  val custom by sliderPrefs.sliderCustomBrightnessColor.collectAsState()
   PillSlider(
     fraction = fraction,
-    icon = Icons.Filled.WbSunny,
+    topColor =
+      if (scheme == SliderColorScheme.Custom) Color(custom) else scheme.brightnessTop ?: MaterialTheme.colorScheme.tertiary,
+    iconRes = R.drawable.ic_slider_brightness,
     label = (fraction * 100).roundToInt().toString(),
     modifier = modifier,
   )
 }
 
 /**
- * Volume on a 0..100 scale: 0..50 is the phone's own volume (0 to its maximum),
- * 51..100 is the boosted volume above the phone's maximum.
+ * Volume on a 0..200 scale: 0..100 is the phone's own volume (0 to its maximum), 101..200 is the
+ * boosted volume above the phone's maximum. When boost is switched off the scale is 0..100.
  */
 @Composable
 fun VolumeSlider(
@@ -224,19 +247,21 @@ fun VolumeSlider(
 ) {
   val maxVolume = range.endInclusive.coerceAtLeast(1)
   val boostCap = boostRange?.endInclusive ?: 0
+  val top = if (boostCap > 0) 200f else 100f
   val level =
-    if (boostCap > 0) {
-      if (mpvVolume > 100 && volume >= maxVolume) {
-        50f + (mpvVolume - 100).coerceAtMost(boostCap) * 50f / boostCap
-      } else {
-        volume * 50f / maxVolume
-      }
+    if (boostCap > 0 && mpvVolume > 100 && volume >= maxVolume) {
+      100f + (mpvVolume - 100).coerceAtMost(boostCap) * 100f / boostCap
     } else {
       volume * 100f / maxVolume
     }
+  val sliderPrefs = koinInject<PlayerPreferences>()
+  val scheme by sliderPrefs.sliderColorScheme.collectAsState()
+  val custom by sliderPrefs.sliderCustomVolumeColor.collectAsState()
   PillSlider(
-    fraction = level / 100f,
-    icon = if (level < 0.5f) Icons.AutoMirrored.Default.VolumeOff else Icons.AutoMirrored.Default.VolumeUp,
+    fraction = level / top,
+    topColor =
+      if (scheme == SliderColorScheme.Custom) Color(custom) else scheme.volumeTop ?: MaterialTheme.colorScheme.primary,
+    iconRes = R.drawable.ic_slider_volume,
     label = level.roundToInt().toString(),
     modifier = modifier,
   )

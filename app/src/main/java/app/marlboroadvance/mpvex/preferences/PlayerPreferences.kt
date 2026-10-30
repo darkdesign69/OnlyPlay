@@ -5,6 +5,7 @@ import app.marlboroadvance.mpvex.preferences.preference.PreferenceStore
 import app.marlboroadvance.mpvex.preferences.preference.getEnum
 import app.marlboroadvance.mpvex.ui.player.PlayerOrientation
 import app.marlboroadvance.mpvex.ui.player.RepeatMode
+import app.marlboroadvance.mpvex.ui.player.SliderColorScheme
 import app.marlboroadvance.mpvex.ui.player.VideoAspect
 
 class PlayerPreferences(
@@ -34,6 +35,9 @@ class PlayerPreferences(
     )
   val displayVolumeAsPercentage = preferenceStore.getBoolean("display_volume_as_percentage", true)
   val swapVolumeAndBrightness = preferenceStore.getBoolean("display_volume_on_right")
+  val sliderColorScheme = preferenceStore.getEnum("slider_color_scheme", SliderColorScheme.Classic)
+  val sliderCustomVolumeColor = preferenceStore.getInt("slider_custom_volume_color", 0xFF7B1F1E.toInt())
+  val sliderCustomBrightnessColor = preferenceStore.getInt("slider_custom_brightness_color", 0xFF2D4AAE.toInt())
   val showLoadingCircle = preferenceStore.getBoolean("show_loading_circle", true)
   val savePositionOnQuit = preferenceStore.getBoolean("save_position", true)
 

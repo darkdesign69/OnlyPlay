@@ -1,9 +1,29 @@
 package app.marlboroadvance.mpvex.ui.player
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.Color
 import app.marlboroadvance.mpvex.R
 import app.marlboroadvance.mpvex.preferences.DecoderPreferences
 import app.marlboroadvance.mpvex.preferences.preference.Preference
+
+/**
+ * Colour grading of the volume and brightness slider bars: every bar fades from white at the bottom to
+ * the colour below at the top. A null colour means "use the app's accent colour".
+ */
+enum class SliderColorScheme(
+  val label: String,
+  val volumeTop: Color?,
+  val brightnessTop: Color?,
+) {
+  Classic("Classic (red & blue)", Color(0xFF7B1F1E), Color(0xFF2D4AAE)),
+  Sunset("Sunset (orange & purple)", Color(0xFFC2410C), Color(0xFF6D28D9)),
+  Ocean("Ocean (blue & cyan)", Color(0xFF1D4ED8), Color(0xFF0E7490)),
+  Forest("Forest (green & teal)", Color(0xFF166534), Color(0xFF0F766E)),
+  Berry("Berry (violet & pink)", Color(0xFF6D28D9), Color(0xFFBE185D)),
+  Mono("Mono (white & grey)", Color(0xFF52525B), Color(0xFF52525B)),
+  Accent("App accent colour", null, null),
+  Custom("Custom colours", null, null),
+}
 
 enum class PlayerOrientation(
   @StringRes val titleRes: Int,

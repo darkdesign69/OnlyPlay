@@ -347,10 +347,10 @@ fun GestureHandler(
           var lastVolumeValue = currentVolume
           var lastMPVVolumeValue = currentMPVVolume ?: 100
           var lastBrightnessValue = currentBrightness
-          // A swipe of about 25% of the screen height covers the whole 0..100 range
+          // A swipe of about 25% of the screen height covers the whole volume / brightness range
           val gestureRangePx = (size.height * 0.25f).coerceAtLeast(300f)
           val brightnessGestureSens = 1f / gestureRangePx
-          val volumeLevelPerPx = 100f / gestureRangePx
+          val volumeLevelPerPx = viewModel.volumeScaleTop() / gestureRangePx
           var volumeStartLevel = 0f
 
           // Original speed for long press

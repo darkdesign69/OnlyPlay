@@ -922,32 +922,33 @@ class PlayerViewModel(
   private fun boostRange(): Int =
     ((volumeBoostCap ?: (audioPreferences.volumeBoostCap.get() + 100)) - 100).coerceAtLeast(0)
 
+  /** Top of the volume scale: 200 when boost is allowed (101..200 is boosted), otherwise 100. */
+  fun volumeScaleTop(): Float = if (boostRange() > 0) 200f else 100f
+
   /**
-   * Current volume on the 0..100 scale: the first half is the phone's own volume (0..max),
-   * the second half is the boosted volume above the phone's maximum.
+   * Current volume on the 0..200 scale: 0..100 is the phone's own volume (0..max), 101..200 is the
+   * boosted volume above the phone's maximum.
    */
   fun computeVolumeLevel(): Float {
     val boost = boostRange()
     val device = host.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
     val mpv = MPVLib.getPropertyInt("volume") ?: 100
-    val deviceTop = if (boost > 0) 50f else 100f
     return if (boost > 0 && mpv > 100 && device >= maxVolume) {
-      50f + (mpv - 100).coerceAtMost(boost) * 50f / boost
+      100f + (mpv - 100).coerceAtMost(boost) * 100f / boost
     } else {
-      device * deviceTop / maxVolume.coerceAtLeast(1)
+      device * 100f / maxVolume.coerceAtLeast(1)
     }
   }
 
-  /** Sets the volume from the 0..100 scale (0..50 phone volume, 51..100 boosted). */
+  /** Sets the volume from the 0..200 scale (0..100 phone volume, 101..200 boosted). */
   fun setVolumeLevel(level: Float) {
-    val clamped = level.coerceIn(0f, 100f)
     val boost = boostRange()
-    val deviceTop = if (boost > 0) 50f else 100f
-    val device = Math.round(minOf(clamped, deviceTop) / deviceTop * maxVolume)
+    val clamped = level.coerceIn(0f, volumeScaleTop())
+    val device = Math.round(minOf(clamped, 100f) / 100f * maxVolume)
     if (device != currentVolume.value) {
       changeVolumeTo(device)
     }
-    val mpv = if (boost > 0 && clamped > 50f) 100 + Math.round((clamped - 50f) / 50f * boost) else 100
+    val mpv = if (boost > 0 && clamped > 100f) 100 + Math.round((clamped - 100f) / 100f * boost) else 100
     if ((MPVLib.getPropertyInt("volume") ?: 100) != mpv) {
       changeMPVVolumeTo(mpv)
     }
@@ -955,7 +956,7 @@ class PlayerViewModel(
   }
 
   fun changeVolumeBy(change: Int) {
-    val step = 50f / maxVolume.coerceAtLeast(1)
+    val step = 100f / maxVolume.coerceAtLeast(1)
     setVolumeLevel(computeVolumeLevel() + change * step)
   }
 

@@ -14,16 +14,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import app.marlboroadvance.mpvex.R
 import app.marlboroadvance.mpvex.preferences.PlayerPreferences
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.ui.player.PlayerOrientation
+import app.marlboroadvance.mpvex.ui.player.SliderColorScheme
 import app.marlboroadvance.mpvex.ui.player.controls.components.sheets.toFixed
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
@@ -369,6 +377,78 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.swapVolumeAndBrightness::set,
                 title = { Text(stringResource(R.string.swap_the_volume_and_brightness_slider)) },
               )
+              
+              PreferenceDivider()
+              
+              val sliderColorScheme by preferences.sliderColorScheme.collectAsState()
+              val customVolumeColor by preferences.sliderCustomVolumeColor.collectAsState()
+              val customBrightnessColor by preferences.sliderCustomBrightnessColor.collectAsState()
+              val accentColor = MaterialTheme.colorScheme.primary
+              val accentColor2 = MaterialTheme.colorScheme.tertiary
+              ListPreference(
+                value = sliderColorScheme,
+                onValueChange = preferences.sliderColorScheme::set,
+                values = SliderColorScheme.entries,
+                valueToText = { scheme ->
+                  val first = if (scheme == SliderColorScheme.Custom) Color(customVolumeColor) else scheme.volumeTop ?: accentColor
+                  val second = if (scheme == SliderColorScheme.Custom) Color(customBrightnessColor) else scheme.brightnessTop ?: accentColor2
+                  buildAnnotatedString {
+                    withStyle(SpanStyle(color = first)) { append("\u25CF ") }
+                    withStyle(SpanStyle(color = second)) { append("\u25CF ") }
+                    append(scheme.label)
+                  }
+                },
+                title = { Text("Slider colours") },
+                summary = {
+                  Text(
+                    text = sliderColorScheme.label,
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+              
+              if (sliderColorScheme == SliderColorScheme.Custom) {
+                var picking by remember { mutableIntStateOf(0) }
+                
+                PreferenceDivider()
+                
+                SliderColorRow(
+                  title = "Volume bar colour",
+                  color = customVolumeColor,
+                  onClick = { picking = 1 },
+                )
+                
+                PreferenceDivider()
+                
+                SliderColorRow(
+                  title = "Brightness bar colour",
+                  color = customBrightnessColor,
+                  onClick = { picking = 2 },
+                )
+                
+                if (picking == 1) {
+                  SliderColorPickerDialog(
+                    title = "Volume bar colour",
+                    initialColor = customVolumeColor,
+                    onDismiss = { picking = 0 },
+                    onConfirm = {
+                      preferences.sliderCustomVolumeColor.set(it)
+                      picking = 0
+                    },
+                  )
+                }
+                if (picking == 2) {
+                  SliderColorPickerDialog(
+                    title = "Brightness bar colour",
+                    initialColor = customBrightnessColor,
+                    onDismiss = { picking = 0 },
+                    onConfirm = {
+                      preferences.sliderCustomBrightnessColor.set(it)
+                      picking = 0
+                    },
+                  )
+                }
+              }
               
               PreferenceDivider()
               
