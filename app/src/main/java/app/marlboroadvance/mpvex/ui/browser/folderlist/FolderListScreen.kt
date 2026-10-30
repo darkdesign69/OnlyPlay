@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FormatListNumbered
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.AccountTree
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
@@ -459,75 +462,27 @@ object FolderListScreen : Screen {
         }
       },
       floatingActionButton = {
-        FloatingActionButtonMenu(
-          modifier = Modifier.padding(bottom = 88.dp),
-          expanded = isFabExpanded.value,
-          button = {
-            TooltipBox(
-              positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                if (isFabExpanded.value) {
-                  TooltipAnchorPosition.Start
-                } else {
-                  TooltipAnchorPosition.Above
-                }
+        FloatingActionButton(
+          modifier =
+            Modifier
+              .padding(bottom = 88.dp)
+              .animateFloatingActionButton(
+                visible = !selectionManager.isInSelectionMode && isFabVisible.value && !app.marlboroadvance.mpvex.ui.browser.MainScreen.getPermissionDeniedState(),
+                alignment = Alignment.BottomEnd,
               ),
-              tooltip = { PlainTooltip { Text("Toggle menu") } },
-              state = rememberTooltipState(),
-            ) {
-              ToggleFloatingActionButton(
-                modifier = Modifier.animateFloatingActionButton(
-                  visible = !selectionManager.isInSelectionMode && isFabVisible.value && !app.marlboroadvance.mpvex.ui.browser.MainScreen.getPermissionDeniedState(),
-                  alignment = Alignment.BottomEnd,
-                ),
-                checked = isFabExpanded.value,
-                onCheckedChange = { isFabExpanded.value = !isFabExpanded.value },
-              ) {
-                val imageVector by remember {
-                  derivedStateOf {
-                    if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.PlayArrow
-                  }
-                }
-                Icon(
-                  painter = rememberVectorPainter(imageVector),
-                  contentDescription = null,
-                  modifier = Modifier.animateIcon({ checkedProgress }),
-                )
+          onClick = {
+            // Play the last played video straight away
+            coroutineScope.launch {
+              val lastPlayed = RecentlyPlayedOps.getRecentlyPlayed(limit = 1).firstOrNull()
+              if (lastPlayed != null) {
+                MediaUtils.playFile(lastPlayed.filePath, context, "recently_played_button")
+              } else {
+                android.widget.Toast.makeText(context, "No recently played video yet", android.widget.Toast.LENGTH_SHORT).show()
               }
             }
           },
         ) {
-          FloatingActionButtonMenuItem(
-            onClick = {
-              isFabExpanded.value = false
-              filePicker.launch(arrayOf("video/*"))
-            },
-            icon = { Icon(Icons.Filled.FileOpen, contentDescription = null) },
-            text = { Text(text = "Open File") },
-          )
-
-          FloatingActionButtonMenuItem(
-            onClick = {
-              isFabExpanded.value = false
-              coroutineScope.launch {
-                val recentlyPlayedVideos = RecentlyPlayedOps.getRecentlyPlayed(limit = 1)
-                val lastPlayed = recentlyPlayedVideos.firstOrNull()
-                if (lastPlayed != null) {
-                  MediaUtils.playFile(lastPlayed.filePath, context, "recently_played_button")
-                }
-              }
-            },
-            icon = { Icon(Icons.Filled.History, contentDescription = null) },
-            text = { Text(text = "Recently Played") },
-          )
-
-          FloatingActionButtonMenuItem(
-            onClick = {
-              isFabExpanded.value = false
-              showLinkDialog.value = true
-            },
-            icon = { Icon(Icons.Filled.Link, contentDescription = null) },
-            text = { Text(text = "Open Link") },
-          )
+          Icon(Icons.Filled.PlayArrow, contentDescription = "Play last played video")
         }
       },
     ) { padding ->
@@ -978,17 +933,26 @@ private fun FolderSortDialog(
       FolderSortType.Title.displayName,
       FolderSortType.Date.displayName,
       FolderSortType.Size.displayName,
+      FolderSortType.VideoCount.displayName,
+      FolderSortType.Duration.displayName,
+      FolderSortType.Path.displayName,
     ),
     icons = listOf(
       Icons.Filled.Title,
       Icons.Filled.CalendarToday,
       Icons.Filled.SwapVert,
+      Icons.Filled.FormatListNumbered,
+      Icons.Filled.AccessTime,
+      Icons.Filled.Folder,
     ),
     getLabelForType = { type, _ ->
       when (type) {
         FolderSortType.Title.displayName -> Pair("A-Z", "Z-A")
         FolderSortType.Date.displayName -> Pair("Oldest", "Newest")
         FolderSortType.Size.displayName -> Pair("Smallest", "Largest")
+        FolderSortType.VideoCount.displayName -> Pair("Fewest", "Most")
+        FolderSortType.Duration.displayName -> Pair("Shortest", "Longest")
+        FolderSortType.Path.displayName -> Pair("A-Z", "Z-A")
         else -> Pair("Asc", "Desc")
       }
     },

@@ -156,13 +156,13 @@ fun SortDialog(
               descLabel = descLabel,
               modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
           }
 
           if (advancedToggles.isNotEmpty()) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            CollapsibleSection(title = "Advanced", startExpanded = true) {
+            if (!showSortOptions) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            CollapsibleSection(title = "Advanced", startExpanded = false) {
               Column(modifier = Modifier.fillMaxWidth()) {
                 advancedToggles.forEach { toggle ->
                   Row(
@@ -290,7 +290,7 @@ private fun OptionCell(
       modifier
         .clip(RoundedCornerShape(12.dp))
         .clickable(enabled = enabled, onClick = onClick)
-        .padding(vertical = 8.dp, horizontal = 2.dp),
+        .padding(vertical = 5.dp, horizontal = 2.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(4.dp),
   ) {

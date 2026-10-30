@@ -48,6 +48,8 @@ object SortUtils {
         FolderSortType.Date -> folders.sortedBy { it.lastModified }
         FolderSortType.Size -> folders.sortedBy { it.totalSize }
         FolderSortType.VideoCount -> folders.sortedBy { it.videoCount }
+        FolderSortType.Duration -> folders.sortedBy { it.totalDuration }
+        FolderSortType.Path -> folders.sortedWith { t1, t2 -> NaturalOrderComparator.DEFAULT.compare(t1.path, t2.path) }
       }
     return if (sortOrder.isAscending) sorted else sorted.reversed()
   }
@@ -72,6 +74,8 @@ object SortUtils {
         FolderSortType.Date -> folders.sortedBy { it.lastModified }
         FolderSortType.Size -> folders.sortedBy { it.totalSize }
         FolderSortType.VideoCount -> folders.sortedBy { it.videoCount }
+        FolderSortType.Duration -> folders.sortedBy { it.totalDuration }
+        FolderSortType.Path -> folders.sortedWith { t1, t2 -> NaturalOrderComparator.DEFAULT.compare(t1.path, t2.path) }
       }
 
     // Sort videos (by corresponding properties)
@@ -81,6 +85,8 @@ object SortUtils {
         FolderSortType.Date -> videos.sortedBy { it.lastModified }
         FolderSortType.Size -> videos.sortedBy { it.video.size }
         FolderSortType.VideoCount -> videos.sortedBy { it.video.duration } // Use duration for videos
+        FolderSortType.Duration -> videos.sortedBy { it.video.duration }
+        FolderSortType.Path -> videos.sortedWith { t1, t2 -> NaturalOrderComparator.DEFAULT.compare(t1.path, t2.path) }
       }
 
     // Apply sort order

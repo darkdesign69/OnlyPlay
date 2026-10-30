@@ -34,8 +34,8 @@ fun LibraryChips(
       modifier
         .fillMaxWidth()
         .horizontalScroll(rememberScrollState())
-        .padding(horizontal = 16.dp, vertical = 8.dp),
-    horizontalArrangement = Arrangement.spacedBy(12.dp),
+        .padding(horizontal = 16.dp, vertical = 4.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
     LibraryChip(icon = Icons.Filled.MusicNote, label = "Music", highlighted = true, onClick = onMusicClick)
     LibraryChip(icon = Icons.Filled.Lock, label = "Privacy", onClick = onPrivacyClick)
@@ -57,7 +57,7 @@ private fun LibraryChip(
     color = container,
   ) {
     Row(
-      modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+      modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -65,11 +65,11 @@ private fun LibraryChip(
         imageVector = icon,
         contentDescription = null,
         tint = content,
-        modifier = Modifier.size(20.dp),
+        modifier = Modifier.size(18.dp),
       )
       Text(
         text = label,
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Medium,
         color = content,
       )

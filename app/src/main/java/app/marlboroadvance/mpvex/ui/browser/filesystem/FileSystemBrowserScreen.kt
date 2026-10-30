@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.AccountTree
@@ -1452,17 +1453,23 @@ fun FileSystemSortDialog(
       app.marlboroadvance.mpvex.preferences.FolderSortType.Title.displayName,
       app.marlboroadvance.mpvex.preferences.FolderSortType.Date.displayName,
       app.marlboroadvance.mpvex.preferences.FolderSortType.Size.displayName,
+      app.marlboroadvance.mpvex.preferences.FolderSortType.Duration.displayName,
+      app.marlboroadvance.mpvex.preferences.FolderSortType.Path.displayName,
     ),
     icons = listOf(
       Icons.Filled.Title,
       Icons.Filled.CalendarToday,
       Icons.Filled.SwapVert,
+      Icons.Filled.AccessTime,
+      Icons.Filled.Folder,
     ),
     getLabelForType = { type, _ ->
       when (type) {
         app.marlboroadvance.mpvex.preferences.FolderSortType.Title.displayName -> Pair("A-Z", "Z-A")
         app.marlboroadvance.mpvex.preferences.FolderSortType.Date.displayName -> Pair("Oldest", "Newest")
         app.marlboroadvance.mpvex.preferences.FolderSortType.Size.displayName -> Pair("Smallest", "Largest")
+        app.marlboroadvance.mpvex.preferences.FolderSortType.Duration.displayName -> Pair("Shortest", "Longest")
+        app.marlboroadvance.mpvex.preferences.FolderSortType.Path.displayName -> Pair("A-Z", "Z-A")
         else -> Pair("Asc", "Desc")
       }
     },

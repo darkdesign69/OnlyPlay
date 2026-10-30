@@ -83,6 +83,8 @@ enum class FolderSortType {
   Date,
   Size,
   VideoCount,
+  Duration,
+  Path,
   ;
 
   val displayName: String
@@ -92,6 +94,8 @@ enum class FolderSortType {
         Date -> "Date"
         Size -> "Size"
         VideoCount -> "Count"
+        Duration -> "Length"
+        Path -> "Path"
       }
 }
 
