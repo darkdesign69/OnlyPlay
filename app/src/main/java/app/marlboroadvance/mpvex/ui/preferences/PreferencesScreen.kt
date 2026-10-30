@@ -117,318 +117,57 @@ object PreferencesScreen : Screen {
             }
           }
           
-          // Library section (these used to be tabs at the bottom of the app)
+          item { PreferenceSectionHeader(title = "UI & Appearance") }
           item {
-            PreferenceSectionHeader(title = "Library")
+            PreferenceTileRow(
+              PrefTile(stringResource(R.string.pref_appearance_title), stringResource(R.string.pref_appearance_summary), Icons.Outlined.Palette) { backstack.add(AppearancePreferencesScreen) },
+              PrefTile("Customize theme", "Background picture or color, accent color, transparency and blur", Icons.Outlined.Image) { backstack.add(CustomizeThemeScreen) },
+            )
+          }
+          item {
+            PreferenceTileRow(
+              PrefTile(stringResource(R.string.pref_layout_title), stringResource(R.string.pref_layout_summary), Icons.AutoMirrored.Outlined.ViewQuilt) { backstack.add(PlayerControlsPreferencesScreen) },
+              PrefTile("Font", "Font family, custom font, size, bold and italic", Icons.Outlined.TextFields) { backstack.add(FontSettingsScreen) },
+            )
           }
 
+          item { PreferenceSectionHeader(title = "Playback & Controls") }
           item {
-            PreferenceCard {
-              Preference(
-                title = { Text(text = "Recents") },
-                summary = {
-                  Text(
-                    text = "Videos you played recently",
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.History,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                  )
-                },
-                onClick = { backstack.add(RecentlyPlayedScreen) },
-              )
-
-              PreferenceDivider()
-
-              Preference(
-                title = { Text(text = "Playlists") },
-                summary = {
-                  Text(
-                    text = "Your video playlists",
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.AutoMirrored.Outlined.PlaylistPlay,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                  )
-                },
-                onClick = { backstack.add(PlaylistScreen) },
-              )
-
-              PreferenceDivider()
-
-              Preference(
-                title = { Text(text = "Network") },
-                summary = {
-                  Text(
-                    text = "Stream from network shares and links",
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Language,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                  )
-                },
-                onClick = { backstack.add(NetworkStreamingScreen) },
-              )
-            }
+            PreferenceTileRow(
+              PrefTile(stringResource(R.string.pref_player), stringResource(R.string.pref_player_summary), Icons.Outlined.PlayCircle) { backstack.add(PlayerPreferencesScreen) },
+              PrefTile(stringResource(R.string.pref_gesture), stringResource(R.string.pref_gesture_summary), Icons.Outlined.Gesture) { backstack.add(GesturePreferencesScreen) },
+            )
           }
 
-          // UI & Appearance Section
+          item { PreferenceSectionHeader(title = "Media Settings") }
           item {
-            PreferenceSectionHeader(title = "UI & Appearance")
+            PreferenceTileRow(
+              PrefTile(stringResource(R.string.pref_decoder), stringResource(R.string.pref_decoder_summary), Icons.Outlined.Memory) { backstack.add(DecoderPreferencesScreen) },
+              PrefTile(stringResource(R.string.pref_subtitles), stringResource(R.string.pref_subtitles_summary), Icons.Outlined.Subtitles) { backstack.add(SubtitlesPreferencesScreen) },
+            )
           }
-          
           item {
-            PreferenceCard {
-              Preference(
-                title = { Text(text = stringResource(id = R.string.pref_appearance_title)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_appearance_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.Outlined.Palette, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(AppearancePreferencesScreen) },
-              )
-              
-              PreferenceDivider()
-              
-              Preference(
-                title = { Text(text = "Customize theme") },
-                summary = {
-                  Text(
-                    text = "Background picture or color, accent color, transparency and blur",
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Image,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                  )
-                },
-                onClick = { backstack.add(CustomizeThemeScreen) },
-              )
-
-              PreferenceDivider()
-
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_layout_title)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_layout_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.AutoMirrored.Outlined.ViewQuilt, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(PlayerControlsPreferencesScreen) },
-              )
-
-              PreferenceDivider()
-
-              Preference(
-                title = { Text(text = "Font") },
-                summary = {
-                  Text(
-                    text = "Font family, custom font, size, bold and italic",
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.TextFields,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                  )
-                },
-                onClick = { backstack.add(FontSettingsScreen) },
-              )
-            }
-          }
-          
-          // Playback & Controls Section
-          item {
-            PreferenceSectionHeader(title = "Playback & Controls")
-          }
-          
-          item {
-            PreferenceCard {
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_player)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_player_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.Outlined.PlayCircle, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(PlayerPreferencesScreen) },
-              )
-              
-              PreferenceDivider()
-              
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_gesture)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_gesture_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.Outlined.Gesture, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(GesturePreferencesScreen) },
-              )
-            }
-          }
-          
-          // File Management Section
-          item {
-            PreferenceSectionHeader(title = "File Management")
-          }
-          
-          item {
-            PreferenceCard {
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_folders_title)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_folders_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.Outlined.Folder, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(FoldersPreferencesScreen) },
-              )
-            }
-          }
-          
-          // Media Settings Section
-          item {
-            PreferenceSectionHeader(title = "Media Settings")
-          }
-          
-          item {
-            PreferenceCard {
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_decoder)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_decoder_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.Outlined.Memory, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(DecoderPreferencesScreen) },
-              )
-              
-              PreferenceDivider()
-              
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_subtitles)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_subtitles_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.Outlined.Subtitles, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(SubtitlesPreferencesScreen) },
-              )
-              
-              PreferenceDivider()
-              
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_audio)) },
-                summary = { 
-                  Text(
-                    text = stringResource(id = R.string.pref_audio_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  ) 
-                },
-                icon = { 
-                  Icon(
-                    Icons.Outlined.Audiotrack, 
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  ) 
-                },
-                onClick = { backstack.add(AudioPreferencesScreen) },
-              )
-            }
-          }
-          
-          // Backup & Restore Section
-          item {
-            PreferenceSectionHeader(title = "Backup & Restore")
+            PreferenceTileRow(
+              PrefTile(stringResource(R.string.pref_audio), stringResource(R.string.pref_audio_summary), Icons.Outlined.Audiotrack) { backstack.add(AudioPreferencesScreen) },
+            )
           }
 
+          item { PreferenceSectionHeader(title = "File Management & Library") }
           item {
-            PreferenceCard {
-              BackupRestoreRows()
-            }
+            PreferenceTileRow(
+              PrefTile(stringResource(R.string.pref_folders_title), stringResource(R.string.pref_folders_summary), Icons.Outlined.Folder) { backstack.add(FoldersPreferencesScreen) },
+              PrefTile("Recents", "Videos you played recently", Icons.Outlined.History) { backstack.add(RecentlyPlayedScreen) },
+            )
           }
+          item {
+            PreferenceTileRow(
+              PrefTile("Playlists", "Your video playlists", Icons.AutoMirrored.Outlined.PlaylistPlay) { backstack.add(PlaylistScreen) },
+              PrefTile("Network", "Stream from network shares and links", Icons.Outlined.Language) { backstack.add(NetworkStreamingScreen) },
+            )
+          }
+
+          item { PreferenceSectionHeader(title = "Backup & Restore") }
+          item { BackupRestoreRows() }
 
           item {
             Text(

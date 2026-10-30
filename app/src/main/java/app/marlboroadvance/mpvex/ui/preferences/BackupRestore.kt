@@ -132,19 +132,8 @@ fun BackupRestoreRows() {
       )
     }
 
-    Preference(
-      title = { Text(text = "Export Settings") },
-      summary = { Text(text = "Export settings to an XML file", color = MaterialTheme.colorScheme.outline) },
-      icon = { Icon(Icons.Outlined.FileUpload, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-      onClick = { exportLauncher.launch(settingsManager.getDefaultExportFilename()) },
-    )
-
-    PreferenceDivider()
-
-    Preference(
-      title = { Text(text = "Import Settings") },
-      summary = { Text(text = "Import settings from an XML file", color = MaterialTheme.colorScheme.outline) },
-      icon = { Icon(Icons.Outlined.FileDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-      onClick = { importLauncher.launch(arrayOf("text/xml", "application/xml", "*/*")) },
+    PreferenceTileRow(
+      PrefTile("Export Settings", "Export settings to an XML file", Icons.Outlined.FileUpload) { exportLauncher.launch(settingsManager.getDefaultExportFilename()) },
+      PrefTile("Import Settings", "Import settings from an XML file", Icons.Outlined.FileDownload) { importLauncher.launch(arrayOf("text/xml", "application/xml", "*/*")) },
     )
 }
