@@ -38,6 +38,8 @@ class PlayerPreferences(
   val sliderColorScheme = preferenceStore.getEnum("slider_color_scheme", SliderColorScheme.Classic)
   val sliderCustomVolumeColor = preferenceStore.getInt("slider_custom_volume_color", 0xFF7B1F1E.toInt())
   val sliderCustomBrightnessColor = preferenceStore.getInt("slider_custom_brightness_color", 0xFF2D4AAE.toInt())
+  val sliderCustomVolumeBottomColor = preferenceStore.getInt("slider_custom_volume_bottom_color", 0xFFFFFFFF.toInt())
+  val sliderCustomBrightnessBottomColor = preferenceStore.getInt("slider_custom_brightness_bottom_color", 0xFFFFFFFF.toInt())
   val showLoadingCircle = preferenceStore.getBoolean("show_loading_circle", true)
   val savePositionOnQuit = preferenceStore.getBoolean("save_position", true)
 

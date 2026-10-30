@@ -160,6 +160,7 @@ fun VerticalSlider(
 private fun PillSlider(
   fraction: Float,
   topColor: Color,
+  bottomColor: Color = Color.White,
   iconRes: Int,
   label: String,
   modifier: Modifier = Modifier,
@@ -199,7 +200,7 @@ private fun PillSlider(
             }
             .background(
               Brush.verticalGradient(
-                colors = listOf(topColor, Color.White),
+                colors = listOf(topColor, bottomColor),
               ),
             ),
       )
@@ -223,10 +224,12 @@ fun BrightnessSlider(
   val sliderPrefs = koinInject<PlayerPreferences>()
   val scheme by sliderPrefs.sliderColorScheme.collectAsState()
   val custom by sliderPrefs.sliderCustomBrightnessColor.collectAsState()
+  val customBottom by sliderPrefs.sliderCustomBrightnessBottomColor.collectAsState()
   PillSlider(
     fraction = fraction,
     topColor =
       if (scheme == SliderColorScheme.Custom) Color(custom) else scheme.brightnessTop ?: MaterialTheme.colorScheme.tertiary,
+    bottomColor = if (scheme == SliderColorScheme.Custom) Color(customBottom) else Color.White,
     iconRes = R.drawable.ic_slider_brightness,
     label = (fraction * 100).roundToInt().toString(),
     modifier = modifier,
@@ -258,10 +261,12 @@ fun VolumeSlider(
   val sliderPrefs = koinInject<PlayerPreferences>()
   val scheme by sliderPrefs.sliderColorScheme.collectAsState()
   val custom by sliderPrefs.sliderCustomVolumeColor.collectAsState()
+  val customBottom by sliderPrefs.sliderCustomVolumeBottomColor.collectAsState()
   PillSlider(
     fraction = level / top,
     topColor =
       if (scheme == SliderColorScheme.Custom) Color(custom) else scheme.volumeTop ?: MaterialTheme.colorScheme.primary,
+    bottomColor = if (scheme == SliderColorScheme.Custom) Color(customBottom) else Color.White,
     iconRes = R.drawable.ic_slider_volume,
     label = level.roundToInt().toString(),
     modifier = modifier,

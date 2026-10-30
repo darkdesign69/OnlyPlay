@@ -383,6 +383,8 @@ object PlayerPreferencesScreen : Screen {
               val sliderColorScheme by preferences.sliderColorScheme.collectAsState()
               val customVolumeColor by preferences.sliderCustomVolumeColor.collectAsState()
               val customBrightnessColor by preferences.sliderCustomBrightnessColor.collectAsState()
+              val customVolumeBottom by preferences.sliderCustomVolumeBottomColor.collectAsState()
+              val customBrightnessBottom by preferences.sliderCustomBrightnessBottomColor.collectAsState()
               val accentColor = MaterialTheme.colorScheme.primary
               val accentColor2 = MaterialTheme.colorScheme.tertiary
               ListPreference(
@@ -426,10 +428,54 @@ object PlayerPreferencesScreen : Screen {
                   onClick = { picking = 2 },
                 )
                 
+                PreferenceDivider()
+
+                SliderColorRow(
+                  title = "Volume bar bottom colour",
+                  color = customVolumeBottom,
+                  onClick = { picking = 3 },
+                )
+
+                PreferenceDivider()
+
+                SliderColorRow(
+                  title = "Brightness bar bottom colour",
+                  color = customBrightnessBottom,
+                  onClick = { picking = 4 },
+                )
+
+                if (picking == 3) {
+                  SliderColorPickerDialog(
+                    title = "Volume bar bottom colour",
+                    initialColor = customVolumeBottom,
+                    otherColor = customVolumeColor,
+                    isBottom = true,
+                    onDismiss = { picking = 0 },
+                    onConfirm = {
+                      preferences.sliderCustomVolumeBottomColor.set(it)
+                      picking = 0
+                    },
+                  )
+                }
+                if (picking == 4) {
+                  SliderColorPickerDialog(
+                    title = "Brightness bar bottom colour",
+                    initialColor = customBrightnessBottom,
+                    otherColor = customBrightnessColor,
+                    isBottom = true,
+                    onDismiss = { picking = 0 },
+                    onConfirm = {
+                      preferences.sliderCustomBrightnessBottomColor.set(it)
+                      picking = 0
+                    },
+                  )
+                }
+
                 if (picking == 1) {
                   SliderColorPickerDialog(
                     title = "Volume bar colour",
                     initialColor = customVolumeColor,
+                    otherColor = customVolumeBottom,
                     onDismiss = { picking = 0 },
                     onConfirm = {
                       preferences.sliderCustomVolumeColor.set(it)
@@ -441,6 +487,7 @@ object PlayerPreferencesScreen : Screen {
                   SliderColorPickerDialog(
                     title = "Brightness bar colour",
                     initialColor = customBrightnessColor,
+                    otherColor = customBrightnessBottom,
                     onDismiss = { picking = 0 },
                     onConfirm = {
                       preferences.sliderCustomBrightnessColor.set(it)

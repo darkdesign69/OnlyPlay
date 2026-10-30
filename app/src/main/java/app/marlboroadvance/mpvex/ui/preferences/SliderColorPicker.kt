@@ -39,6 +39,7 @@ private val QuickColors =
   listOf(
     0xFF7B1F1E, 0xFFC2410C, 0xFFB45309, 0xFF166534, 0xFF0F766E,
     0xFF1D4ED8, 0xFF2D4AAE, 0xFF6D28D9, 0xFFBE185D, 0xFF52525B,
+    0xFFFFFFFF, 0xFF000000,
   ).map { it.toInt() }
 
 private fun hexOf(
@@ -79,7 +80,7 @@ fun SliderColorRow(
 
 /**
  * Colour picker for a slider bar: hue / saturation / brightness sliders, a hex field and a few quick
- * colours, with a live preview of the bar (the chosen colour fades to white at the bottom).
+ * colours, with a live preview of the bar (top colour fading into the bottom colour).
  */
 @Composable
 fun SliderColorPickerDialog(
@@ -87,6 +88,10 @@ fun SliderColorPickerDialog(
   initialColor: Int,
   onDismiss: () -> Unit,
   onConfirm: (Int) -> Unit,
+  /** The colour at the other end of the bar, used for the preview. */
+  otherColor: Int = 0xFFFFFFFF.toInt(),
+  /** True when this picker chooses the bottom colour of the bar. */
+  isBottom: Boolean = false,
 ) {
   val start = remember(initialColor) { FloatArray(3).also { android.graphics.Color.colorToHSV(initialColor, it) } }
   var hue by remember { mutableFloatStateOf(start[0]) }
@@ -114,7 +119,7 @@ fun SliderColorPickerDialog(
           horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
           Column(modifier = Modifier.weight(1f)) {
-            Text("Hue", style = MaterialTheme.typography.labelMedium)
+            Text("Color", style = MaterialTheme.typography.labelMedium)
             Slider(
               value = hue,
               onValueChange = {
@@ -123,7 +128,7 @@ fun SliderColorPickerDialog(
               },
               valueRange = 0f..360f,
             )
-            Text("Saturation", style = MaterialTheme.typography.labelMedium)
+            Text("Strength", style = MaterialTheme.typography.labelMedium)
             Slider(
               value = sat,
               onValueChange = {
@@ -148,7 +153,7 @@ fun SliderColorPickerDialog(
                 .width(24.dp)
                 .height(130.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.verticalGradient(listOf(color, Color.White))),
+                .background(Brush.verticalGradient(if (isBottom) listOf(Color(otherColor), color) else listOf(color, Color(otherColor)))),
           )
         }
         OutlinedTextField(
