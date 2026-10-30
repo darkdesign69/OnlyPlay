@@ -537,9 +537,11 @@ object MusicScreen : Screen {
                 if (MusicSettings.isTabVisible(i)) {
                   val labelText: @Composable () -> Unit = { Text(label, maxLines = 1) }
                   NavigationBarItem(
-                    selected = tab == i && detail == null,
+                    selected = tab == i && detail == null && !showSettings,
                     onClick = {
                       tab = i
+                      showSettings = false
+                      settingsPage = -1
                       detail = null
                       searching = false
                       query = ""
@@ -1258,7 +1260,7 @@ private fun TagEditorScreen(
 // ---------------------------------------------------------------------------------------------
 
 @Composable
-private fun MiniPlayer(onOpen: () -> Unit) {
+internal fun MiniPlayer(onOpen: () -> Unit) {
   val t = MusicController.current ?: return
   var pos by remember { mutableIntStateOf(0) }
   LaunchedEffect(MusicController.index, MusicController.isPlaying) {

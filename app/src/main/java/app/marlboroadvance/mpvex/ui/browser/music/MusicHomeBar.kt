@@ -83,45 +83,9 @@ fun HomeMiniAudioBar(
   val art by produceState<Bitmap?>(null, t.id) { value = withContext(Dispatchers.IO) { loadArt(context, t, 160) } }
   MusicTypographyTheme {
     SolidThemed {
-      Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh).navigationBarsPadding()) {
-        HorizontalDivider()
-        Row(
-          modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-          IconButton(onClick = { MusicController.stopAll() }) { Icon(Icons.Filled.Close, "Close player") }
-          Row(
-            modifier = Modifier.weight(1f).clickable(onClick = onOpenNow),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-          ) {
-            val bmp = art
-            Box(
-              modifier = Modifier.size(56.dp).clip(MaterialTheme.shapes.extraSmall).background(MaterialTheme.colorScheme.secondaryContainer),
-              contentAlignment = Alignment.Center,
-            ) {
-              if (bmp != null) {
-                Image(bitmap = bmp.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(56.dp))
-              } else {
-                Icon(Icons.Filled.MusicNote, null)
-              }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-              Text(t.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-              Text(
-                barTime(pos) + "/" + barTime(t.durationMs.toInt()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline,
-                maxLines = 1,
-              )
-            }
-          }
-          IconButton(onClick = { MusicController.togglePlay() }) {
-            Icon(if (MusicController.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, "Play/Pause", Modifier.size(32.dp))
-          }
-          IconButton(onClick = onOpenLibrary) { Icon(Icons.AutoMirrored.Filled.QueueMusic, "Open music") }
-        }
+      Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+        // Same bar as inside the music screen: swipe down to close, previous / play / next
+        MiniPlayer(onOpen = onOpenNow)
       }
     }
   }
