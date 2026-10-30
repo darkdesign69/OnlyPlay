@@ -1335,6 +1335,7 @@ private fun NowPlaying(
   var showQueue by remember { mutableStateOf(false) }
   var showSleep by remember { mutableStateOf(false) }
   var showSpeed by remember { mutableStateOf(false) }
+  var showEq by remember { mutableStateOf(false) }
   var menu by remember { mutableStateOf(false) }
   var showLyrics by remember { mutableStateOf(false) }
   val info by produceState("", t.id) { value = withContext(Dispatchers.IO) { loadSongInfo(context, t) } }
@@ -1580,7 +1581,7 @@ private fun NowPlaying(
             ) = DropdownMenuItem(text = { Text(label) }, onClick = { menu = false; run() })
             item("Sleep timer") { showSleep = true }
             item("Playback speed") { showSpeed = true }
-            item("Equalizer") { openEqualizer(context) }
+            item("Equalizer") { showEq = true }
             item("Tag editor") { showTags = true }
             item("Edit lyrics") { showEditor = true }
             item("Add to playlist") { actions.addToPlaylist(t) }
@@ -1647,6 +1648,7 @@ private fun NowPlaying(
       confirmButton = { TextButton(onClick = { showSleep = false }) { Text("Close") } },
     )
   }
+  if (showEq) EqualizerDialog { showEq = false }
   if (showSpeed) {
     AlertDialog(
       containerColor = popupColor(),

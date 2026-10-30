@@ -482,6 +482,7 @@ object MusicController {
       mp.setDataSource(app, t.uri)
       mp.setOnPreparedListener {
         prepared = true
+        MusicAudioFx.attach(app, it.audioSessionId)
         applySpeed()
         if (seekOnStart > 0) it.seekTo(seekOnStart)
         it.start()
@@ -1037,6 +1038,7 @@ object MusicController {
   }
 
   private fun releasePlayer() {
+    MusicAudioFx.release()
     try {
       player?.release()
     } catch (_: Exception) {

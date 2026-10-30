@@ -612,7 +612,8 @@ private fun ImagesPage() {
 
 @Composable
 private fun AudioPage() {
-  val context = LocalContext.current
+  var showEq by remember { mutableStateOf(false) }
+  if (showEq) EqualizerDialog { showEq = false }
   OtoPage("Audio") {
     item { OtoSwitch("Fade music on play or pause (Beta)", "Smooth fade music on pause or resume playback.", MusicSettings.audioFade) { upd { MusicSettings.audioFade = it } } }
     item { OtoSwitch("Lower volume on focus loss", "Lower the volume when a system sound is played or a notification is received", MusicSettings.duck) { upd { MusicSettings.duck = it } } }
@@ -620,7 +621,7 @@ private fun AudioPage() {
     item { OtoSwitch("Keep shuffle mode", "Shuffle mode won't turn off when playing a new list of songs.", MusicSettings.keepShuffle) { upd { MusicSettings.keepShuffle = it } } }
     item { OtoSwitch("Pause when headphones disconnect", null, MusicSettings.pauseOnUnplug) { upd { MusicSettings.pauseOnUnplug = it } } }
     item { OtoSwitch("Remember queue and position", "Continue where you stopped next time", MusicSettings.restoreQueue) { upd { MusicSettings.restoreQueue = it } } }
-    item { OtoRow("Equalizer", "Open the equalizer of your phone", true, { openEqualizer(context) }) }
+    item { OtoRow("Equalizer", "Tune EQ bands, bass boost, surround and volume boost", true, { showEq = true }) }
   }
 }
 
