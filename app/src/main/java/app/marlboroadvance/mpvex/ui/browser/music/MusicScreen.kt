@@ -638,7 +638,11 @@ object MusicScreen : Screen {
                   onShuffle = { startPlay(tracks, 0, true); openNow() },
                 )
                 Box(modifier = Modifier.weight(1f)) {
-                  SongList(sortedSongs, actions, onPlay = { i -> startPlay(sortedSongs, i); openNow() })
+                  // key() rebuilds the list on every sort change; otherwise LazyColumn keeps the same song
+                  // pinned at the top (items are keyed by id) and the new order looks like it did nothing.
+                  androidx.compose.runtime.key(sortBy, sortDesc) {
+                    SongList(sortedSongs, actions, onPlay = { i -> startPlay(sortedSongs, i); openNow() })
+                  }
                 }
               }
             tab == 2 ->
@@ -2030,9 +2034,15 @@ private fun SortSheet(
   onPick: (Int) -> Unit,
   onDismiss: () -> Unit,
 ) {
-  ModalBottomSheet(onDismissRequest = onDismiss, containerColor = popupColor()) {
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-      Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+  // Compact like Oto: opens straight at its own height (never the full screen) with no drag handle.
+  ModalBottomSheet(
+    onDismissRequest = onDismiss,
+    containerColor = popupColor(),
+    sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    dragHandle = null,
+  ) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 8.dp)) {
+      Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 10.dp)) {
         Text("Sort by", style = MaterialTheme.typography.titleMedium)
         Text(
           "Select the option once more to sort in descending order",
@@ -2047,11 +2057,12 @@ private fun SortSheet(
           modifier =
             Modifier
               .fillMaxWidth()
-              .padding(horizontal = 12.dp, vertical = 2.dp)
+              .padding(horizontal = 12.dp)
               .clip(RoundedCornerShape(50))
               .background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
               .clickable { onPick(i) }
-              .padding(horizontal = 16.dp, vertical = 14.dp),
+              .heightIn(min = 50.dp)
+              .padding(horizontal = 16.dp),
           verticalAlignment = Alignment.CenterVertically,
         ) {
           Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.CenterStart) {
