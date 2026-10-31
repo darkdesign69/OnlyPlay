@@ -3,7 +3,10 @@ package app.marlboroadvance.mpvex.ui.browser.music
 import android.Manifest
 import android.content.ClipData
 import android.content.Context
+import android.app.Activity
 import android.content.Intent
+import android.provider.MediaStore
+import androidx.activity.result.IntentSenderRequest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.MediaScannerConnection
@@ -327,6 +330,7 @@ object MusicScreen : Screen {
     var addMany by remember { mutableStateOf<List<MusicTrack>?>(null) }
     var infoTarget by remember { mutableStateOf<MusicTrack?>(null) }
     var deleteTarget by remember { mutableStateOf<MusicTrack?>(null) }
+    var pendingDelete by remember { mutableStateOf<MusicTrack?>(null) }
     var newPlaylistFor by remember { mutableStateOf<Long?>(null) }
     var newPlaylistDialog by remember { mutableStateOf(false) }
 
@@ -445,6 +449,19 @@ object MusicScreen : Screen {
         info = { infoTarget = it },
         delete = { deleteTarget = it },
       )
+
+    fun finishDelete(t: MusicTrack) {
+      val qi = MusicController.queue.indexOfFirst { it.id == t.id }
+      if (qi >= 0) MusicController.removeFromQueue(qi)
+      tracks = tracks.filter { it.id != t.id }
+      Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+    }
+    val deleteLauncher =
+      rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
+        val t = pendingDelete
+        pendingDelete = null
+        if (res.resultCode == Activity.RESULT_OK && t != null) finishDelete(t)
+      }
 
     BackHandler(enabled = showNow || detail != null || searching || showSettings) {
       when {
@@ -797,10 +814,16 @@ object MusicScreen : Screen {
             onClick = {
               deleteTarget = null
               if (deleteTrackFile(context, t)) {
-                val qi = MusicController.queue.indexOfFirst { it.id == t.id }
-                if (qi >= 0) MusicController.removeFromQueue(qi)
-                tracks = tracks.filter { it.id != t.id }
-                Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                finishDelete(t)
+              } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // The app may not delete this file itself: let Android ask the user to allow it
+                try {
+                  val request = MediaStore.createDeleteRequest(context.contentResolver, listOf(t.uri))
+                  pendingDelete = t
+                  deleteLauncher.launch(IntentSenderRequest.Builder(request.intentSender).build())
+                } catch (_: Throwable) {
+                  Toast.makeText(context, "Couldn't delete. Allow \"All files access\" for this app in Android settings", Toast.LENGTH_LONG).show()
+                }
               } else {
                 Toast.makeText(context, "Couldn't delete. Allow \"All files access\" for this app in Android settings", Toast.LENGTH_LONG).show()
               }
@@ -1134,6 +1157,7 @@ private fun SongRow(
           add(
             SheetItem(if (fav) "Remove from favorites" else "Add to favorites", if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder) {
               MusicController.toggleFavorite(track.id)
+              Toast.makeText(ctx, if (fav) "Removed from favorites" else "Added to favorites", Toast.LENGTH_SHORT).show()
             },
           )
           if (extra != null) add(SheetItem("Remove from playlist", Icons.Filled.Delete) { extra() })
@@ -1859,6 +1883,7 @@ internal fun ActionSheet(
   items: List<SheetItem>,
   onDismiss: () -> Unit,
 ) {
+  val sheetContext = LocalContext.current
   ModalBottomSheet(onDismissRequest = onDismiss, containerColor = popupColor()) {
     Row(
       modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
@@ -1876,7 +1901,17 @@ internal fun ActionSheet(
       items.forEach { it0 ->
         if (it0.divider) HorizontalDivider(modifier = Modifier.padding(start = 72.dp, top = 4.dp, bottom = 4.dp))
         Row(
-          modifier = Modifier.fillMaxWidth().clickable { onDismiss(); it0.onClick() }.padding(horizontal = 24.dp, vertical = 16.dp),
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .clickable {
+                try {
+                  it0.onClick()
+                } catch (e: Throwable) {
+                  Toast.makeText(sheetContext, "Couldn't do that: ${e.message ?: it0.label}", Toast.LENGTH_LONG).show()
+                }
+                onDismiss()
+              }.padding(horizontal = 24.dp, vertical = 16.dp),
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(28.dp),
         ) {
@@ -1935,7 +1970,13 @@ private fun shareTrack(
       clipData = ClipData.newRawUri("", t.uri)
       addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-  context.startActivity(Intent.createChooser(i, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+  try {
+    context.startActivity(
+      Intent.createChooser(i, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION),
+    )
+  } catch (_: Throwable) {
+    Toast.makeText(context, "Couldn't share this song", Toast.LENGTH_SHORT).show()
+  }
 }
 
 internal fun openEqualizer(context: Context) {
@@ -2051,7 +2092,7 @@ private fun SortSheet(
         )
       }
       HorizontalDivider()
-      sortNames.forEachIndexed { i, name ->
+      sortNames.withIndex().sortedBy { it.value.lowercase() }.forEach { (i, name) ->
         val on = i == selected
         Row(
           modifier =
