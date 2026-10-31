@@ -1873,8 +1873,11 @@ internal class SheetItem(
   val onClick: () -> Unit,
 )
 
-/** Bottom sheet with a header and a list of actions (like the Oto song and folder menus). */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Bottom sheet with a header and a list of actions (like the Oto song and folder menus).
+ * Built on a plain Dialog so every tap reaches the rows. The sheet closes first and the chosen
+ * action runs right after, so the action can change the screen behind it safely.
+ */
 @Composable
 internal fun ActionSheet(
   title: String,
@@ -1884,39 +1887,73 @@ internal fun ActionSheet(
   onDismiss: () -> Unit,
 ) {
   val sheetContext = LocalContext.current
-  ModalBottomSheet(onDismissRequest = onDismiss, containerColor = popupColor()) {
-    Row(
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(20.dp),
+  val maxHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.86f).dp
+  Dialog(
+    onDismissRequest = onDismiss,
+    properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+  ) {
+    Box(
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .clickable(
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            indication = null,
+            onClick = onDismiss,
+          ),
+      contentAlignment = Alignment.BottomCenter,
     ) {
-      leading()
-      Column {
-        Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
-      }
-    }
-    HorizontalDivider()
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-      items.forEach { it0 ->
-        if (it0.divider) HorizontalDivider(modifier = Modifier.padding(start = 72.dp, top = 4.dp, bottom = 4.dp))
-        Row(
-          modifier =
-            Modifier
-              .fillMaxWidth()
-              .clickable {
-                try {
-                  it0.onClick()
-                } catch (e: Throwable) {
-                  Toast.makeText(sheetContext, "Couldn't do that: ${e.message ?: it0.label}", Toast.LENGTH_LONG).show()
-                }
-                onDismiss()
-              }.padding(horizontal = 24.dp, vertical = 16.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(28.dp),
-        ) {
-          Icon(it0.icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-          Text(it0.label, style = MaterialTheme.typography.bodyLarge)
+      Surface(
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .heightIn(max = maxHeight)
+            .clickable(
+              interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+              indication = null,
+              onClick = {},
+            ),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        color = popupColor(),
+      ) {
+        Column(modifier = Modifier.navigationBarsPadding()) {
+          Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+          ) {
+            leading()
+            Column {
+              Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+              if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+          }
+          HorizontalDivider()
+          Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(bottom = 12.dp)) {
+            items.forEach { item ->
+              if (item.divider) HorizontalDivider(modifier = Modifier.padding(start = 72.dp, top = 2.dp, bottom = 2.dp))
+              Row(
+                modifier =
+                  Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                      onDismiss()
+                      android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        try {
+                          item.onClick()
+                        } catch (e: Throwable) {
+                          Toast.makeText(sheetContext, "Couldn't do that: ${e.message ?: item.label}", Toast.LENGTH_LONG).show()
+                        }
+                      }
+                    }.padding(horizontal = 24.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(28.dp),
+              ) {
+                Icon(item.icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(item.label, style = MaterialTheme.typography.bodyLarge)
+              }
+            }
+          }
         }
       }
     }
