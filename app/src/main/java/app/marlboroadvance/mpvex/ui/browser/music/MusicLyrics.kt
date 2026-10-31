@@ -124,6 +124,8 @@ internal object LyricsStore {
       val f = file(ctx, t.id)
       f.parentFile?.mkdirs()
       if (text.isBlank()) f.delete() else f.writeText(text)
+      // also write the lyrics into the audio file so other players show them
+      MusicTagWriter.embedLyricsAsync(ctx, t.path, text)
       version++
     } catch (_: Exception) {
     }

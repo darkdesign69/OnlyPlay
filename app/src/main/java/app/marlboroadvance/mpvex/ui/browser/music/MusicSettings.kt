@@ -233,7 +233,7 @@ object MusicSettings {
     openMode = i("openMode", openMode).coerceIn(0, 1)
     defaultTab = i("defaultTab", defaultTab).coerceIn(0, 4)
     lastTab = i("lastTab", lastTab).coerceIn(0, 4)
-    sortBy = i("sortBy", sortBy).coerceIn(0, 4)
+    sortBy = i("sortBy", sortBy).coerceIn(0, 10)
     sortDesc = b("sortDesc", sortDesc)
     panelOpacity = i("panelOpacity", panelOpacity).coerceIn(0, 100)
     tabLabels = i("tabLabels", tabLabels).coerceIn(0, 2)

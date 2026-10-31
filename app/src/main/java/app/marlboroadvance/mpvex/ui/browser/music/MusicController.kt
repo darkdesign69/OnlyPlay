@@ -60,6 +60,12 @@ data class MusicTrack(
   val dateAdded: Long,
   val path: String,
   val uri: Uri,
+  val albumArtist: String = "",
+  val genre: String = "",
+  val composer: String = "",
+  val year: Int = 0,
+  val trackNo: Int = 0,
+  val dateModified: Long = 0L,
 )
 
 /**
@@ -171,6 +177,8 @@ object MusicTagEdits {
       val bmp = if (big > 1024) Bitmap.createScaledBitmap(src, src.width * 1024 / big, src.height * 1024 / big, true) else src
       coverFile(ctx, id).outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 92, it) }
       mark(ctx, id, custom = true, removed = false)
+      // also write the picture into the audio file so other players show it
+      MusicTagWriter.embedCoverAsync(ctx, id, coverFile(ctx, id).readBytes())
       true
     } catch (_: Exception) {
       false
@@ -185,6 +193,7 @@ object MusicTagEdits {
     } catch (_: Exception) {
     }
     mark(ctx, id, custom = false, removed = true)
+    MusicTagWriter.embedCoverAsync(ctx, id, null)
   }
 
   private fun mark(
@@ -287,7 +296,12 @@ fun loadMusicTracks(context: Context): List<MusicTrack> {
       MediaStore.Audio.Media.DURATION,
       MediaStore.Audio.Media.DATE_ADDED,
       MediaStore.Audio.Media.DATA,
-    )
+      MediaStore.Audio.Media.COMPOSER,
+      MediaStore.Audio.Media.YEAR,
+      MediaStore.Audio.Media.TRACK,
+      MediaStore.Audio.Media.DATE_MODIFIED,
+    ) +
+      (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) arrayOf(MediaStore.Audio.Media.ALBUM_ARTIST, MediaStore.Audio.Media.GENRE) else emptyArray<String>())
   val result = mutableListOf<MusicTrack>()
   try {
     context.contentResolver
@@ -306,6 +320,12 @@ fun loadMusicTracks(context: Context): List<MusicTrack> {
         val iDur = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
         val iAdded = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
         val iData = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+        val iComposer = c.getColumnIndexOrThrow(MediaStore.Audio.Media.COMPOSER)
+        val iYear = c.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
+        val iTrack = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+        val iModified = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
+        val iAlbumArtist = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) c.getColumnIndex(MediaStore.Audio.Media.ALBUM_ARTIST) else -1
+        val iGenre = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) c.getColumnIndex(MediaStore.Audio.Media.GENRE) else -1
         while (c.moveToNext()) {
           val id = c.getLong(iId)
           val artist = c.getString(iArtist)
@@ -321,6 +341,12 @@ fun loadMusicTracks(context: Context): List<MusicTrack> {
               dateAdded = c.getLong(iAdded),
               path = c.getString(iData) ?: "",
               uri = ContentUris.withAppendedId(collection, id),
+              albumArtist = if (iAlbumArtist >= 0) c.getString(iAlbumArtist) ?: "" else "",
+              genre = if (iGenre >= 0) c.getString(iGenre) ?: "" else "",
+              composer = c.getString(iComposer) ?: "",
+              year = c.getInt(iYear),
+              trackNo = c.getInt(iTrack),
+              dateModified = c.getLong(iModified),
             ),
           )
         }

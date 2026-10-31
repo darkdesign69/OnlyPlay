@@ -76,6 +76,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -238,9 +240,11 @@ private class SongActions(
   val goArtist: (MusicTrack) -> Unit,
   val share: (MusicTrack) -> Unit,
   val info: (MusicTrack) -> Unit,
+  val delete: (MusicTrack) -> Unit,
 )
 
-private val sortNames = listOf("Title", "Artist", "Album", "Date added", "Duration")
+private val sortNames =
+  listOf("Name", "Album", "Artist", "Album artist", "Genre", "Track number", "Duration", "Year", "Composer", "Date modified", "Date Added")
 
 // ---------------------------------------------------------------------------------------------
 // Screen
@@ -322,6 +326,7 @@ object MusicScreen : Screen {
     var addTarget by remember { mutableStateOf<MusicTrack?>(null) }
     var addMany by remember { mutableStateOf<List<MusicTrack>?>(null) }
     var infoTarget by remember { mutableStateOf<MusicTrack?>(null) }
+    var deleteTarget by remember { mutableStateOf<MusicTrack?>(null) }
     var newPlaylistFor by remember { mutableStateOf<Long?>(null) }
     var newPlaylistDialog by remember { mutableStateOf(false) }
 
@@ -340,10 +345,16 @@ object MusicScreen : Screen {
       remember(tracks, sortBy, sortDesc) {
         val cmp: Comparator<MusicTrack> =
           when (sortBy) {
-            1 -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.artist }
-            2 -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.album }
-            3 -> compareBy<MusicTrack> { it.dateAdded }
-            4 -> compareBy<MusicTrack> { it.durationMs }
+            1 -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.album }
+            2 -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.artist }
+            3 -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.albumArtist.ifBlank { it.artist } }
+            4 -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.genre }
+            5 -> compareBy<MusicTrack> { it.trackNo }
+            6 -> compareBy<MusicTrack> { it.durationMs }
+            7 -> compareBy<MusicTrack> { it.year }
+            8 -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.composer }
+            9 -> compareBy<MusicTrack> { it.dateModified }
+            10 -> compareBy<MusicTrack> { it.dateAdded }
             else -> compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.title }
           }
         val s = tracks.sortedWith(cmp)
@@ -432,6 +443,7 @@ object MusicScreen : Screen {
         },
         share = { shareTrack(context, it) },
         info = { infoTarget = it },
+        delete = { deleteTarget = it },
       )
 
     BackHandler(enabled = showNow || detail != null || searching || showSettings) {
@@ -448,9 +460,28 @@ object MusicScreen : Screen {
       }
     }
 
+    if (sortMenu) {
+      SortSheet(
+        selected = sortBy,
+        desc = sortDesc,
+        onPick = { i ->
+          if (sortBy == i) sortDesc = !sortDesc else { sortBy = i; sortDesc = false }
+          sortMenu = false
+        },
+        onDismiss = { sortMenu = false },
+      )
+    }
     Box(modifier = Modifier.fillMaxSize()) {
       Scaffold(
         topBar = {
+          if (!searching && detail == null && !showSettings) {
+            OtoSearchBar(
+              onBack = { backstack.removeLastOrNull() },
+              onSearch = { searching = true },
+              onAdd = { addFilesLauncher.launch(arrayOf("audio/*")) },
+              onSettings = { settingsPage = -1; showSettings = true },
+            )
+          } else
           TopAppBar(
             title = {
               if (searching) {
@@ -494,22 +525,6 @@ object MusicScreen : Screen {
                 IconButton(onClick = { searching = true }) { Icon(Icons.Filled.Search, "Search") }
                 IconButton(enabled = granted && tracks.isNotEmpty(), onClick = { startPlay(tracks, 0, true); openNow() }) {
                   Icon(Icons.Filled.Shuffle, "Shuffle all")
-                }
-                if (tab == 1) {
-                  Box {
-                    IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
-                    DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }, containerColor = popupColor()) {
-                      sortNames.forEachIndexed { i, n ->
-                        DropdownMenuItem(
-                          text = { Text(n + if (i == sortBy) (if (sortDesc) "  ↓" else "  ↑") else "") },
-                          onClick = {
-                            if (sortBy == i) sortDesc = !sortDesc else { sortBy = i; sortDesc = false }
-                            sortMenu = false
-                          },
-                        )
-                      }
-                    }
-                  }
                 }
                 IconButton(onClick = { addFilesLauncher.launch(arrayOf("audio/*")) }) { Icon(Icons.Filled.Add, "Add files") }
                 IconButton(onClick = { settingsPage = -1; showSettings = true }) { Icon(Icons.Filled.Settings, "Music settings") }
@@ -613,7 +628,19 @@ object MusicScreen : Screen {
                 onPlayTrack = { list, i -> startPlay(list, i); openNow() },
                 onAlbum = { detail = Detail.AlbumD(it.key, it.name, it.artist) },
               )
-            tab == 1 -> SongList(sortedSongs, actions, onPlay = { i -> startPlay(sortedSongs, i); openNow() })
+            tab == 1 ->
+              Column(modifier = Modifier.fillMaxSize()) {
+                SongsHeader(
+                  sortLabel = sortNames[sortBy.coerceIn(0, sortNames.lastIndex)],
+                  sortDesc = sortDesc,
+                  count = sortedSongs.size,
+                  onSort = { sortMenu = true },
+                  onShuffle = { startPlay(tracks, 0, true); openNow() },
+                )
+                Box(modifier = Modifier.weight(1f)) {
+                  SongList(sortedSongs, actions, onPlay = { i -> startPlay(sortedSongs, i); openNow() })
+                }
+              }
             tab == 2 ->
               LazyVerticalGrid(
                 columns = GridCells.Fixed(MusicSettings.gridColumns.coerceIn(2, 4)),
@@ -753,6 +780,30 @@ object MusicScreen : Screen {
           }
         },
         confirmButton = { TextButton(onClick = { addMany = null }) { Text("Cancel") } },
+      )
+    }
+    deleteTarget?.let { t ->
+      AlertDialog(
+        containerColor = popupColor(),
+        onDismissRequest = { deleteTarget = null },
+        title = { Text("Delete from device") },
+        text = { Text("\"${t.title}\" will be permanently deleted from your device. This can't be undone.") },
+        confirmButton = {
+          TextButton(
+            onClick = {
+              deleteTarget = null
+              if (deleteTrackFile(context, t)) {
+                val qi = MusicController.queue.indexOfFirst { it.id == t.id }
+                if (qi >= 0) MusicController.removeFromQueue(qi)
+                tracks = tracks.filter { it.id != t.id }
+                Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+              } else {
+                Toast.makeText(context, "Couldn't delete. Allow \"All files access\" for this app in Android settings", Toast.LENGTH_LONG).show()
+              }
+            },
+          ) { Text("Delete") }
+        },
+        dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } },
       )
     }
     infoTarget?.let { t ->
@@ -1089,6 +1140,7 @@ private fun SongRow(
           add(SheetItem("Share", Icons.Filled.Share) { actions.share(track) })
           val folder = track.path.substringBeforeLast('/', "")
           if (folder.isNotEmpty()) add(SheetItem("Blacklist", Icons.Filled.VisibilityOff, divider = true) { blacklistFolder(ctx, folder) })
+          add(SheetItem("Delete from device", Icons.Filled.Delete) { actions.delete(track) })
         },
       onDismiss = { menu = false },
     )
@@ -1591,6 +1643,7 @@ private fun NowPlaying(
             item("Go to artist") { actions.goArtist(t) }
             item("Share") { actions.share(t) }
             item("Details") { actions.info(t) }
+            item("Delete from device") { actions.delete(t) }
             item("Show queue") { showQueue = true }
             item("Clear playing queue") { MusicController.clearQueue() }
             item("Stop & close player") { MusicController.stopAll(); onClose() }
@@ -1843,6 +1896,30 @@ private fun blacklistFolder(
   Toast.makeText(ctx, "Folder hidden. Undo it in Settings > Library > Blacklist", Toast.LENGTH_LONG).show()
 }
 
+/** Deletes the audio file (and its MediaStore row). Returns true when the file is gone. */
+private fun deleteTrackFile(
+  context: Context,
+  t: MusicTrack,
+): Boolean {
+  try {
+    val f = java.io.File(t.path)
+    if (f.exists()) f.delete()
+  } catch (_: Throwable) {
+  }
+  try {
+    context.contentResolver.delete(t.uri, null, null)
+  } catch (_: Throwable) {
+  }
+  val gone = !java.io.File(t.path).exists()
+  if (gone) {
+    try {
+      android.media.MediaScannerConnection.scanFile(context, arrayOf(t.path), null, null)
+    } catch (_: Throwable) {
+    }
+  }
+  return gone
+}
+
 private fun shareTrack(
   context: Context,
   t: MusicTrack,
@@ -1875,4 +1952,125 @@ private fun formatTrackTime(durationMs: Long): String {
   val minutes = totalSeconds % 3600 / 60
   val seconds = totalSeconds % 60
   return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, seconds) else "%d:%02d".format(minutes, seconds)
+}
+
+// ---------------------------------------------------------------------------------------------
+// Oto-style search bar, songs header and sort sheet
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+private fun OtoSearchBar(
+  onBack: () -> Unit,
+  onSearch: () -> Unit,
+  onAdd: () -> Unit,
+  onSettings: () -> Unit,
+) {
+  Surface(
+    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+    shape = RoundedCornerShape(50),
+    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+  ) {
+    Row(
+      modifier = Modifier.fillMaxWidth().height(56.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+      Text(
+        text = "Search your music",
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.weight(1f).clickable(onClick = onSearch).padding(vertical = 16.dp),
+      )
+      IconButton(onClick = onAdd) { Icon(Icons.Filled.Add, contentDescription = "Add files") }
+      IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Music settings") }
+    }
+  }
+}
+
+@Composable
+private fun SongsHeader(
+  sortLabel: String,
+  sortDesc: Boolean,
+  count: Int,
+  onSort: () -> Unit,
+  onShuffle: () -> Unit,
+) {
+  Row(
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Row(
+      modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onSort).padding(horizontal = 8.dp, vertical = 10.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+      Text(sortLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+      Icon(
+        if (sortDesc) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+        contentDescription = null,
+        modifier = Modifier.size(18.dp),
+      )
+    }
+    Spacer(Modifier.weight(1f))
+    IconButton(onClick = onShuffle) { Icon(Icons.Filled.Shuffle, contentDescription = "Shuffle all") }
+    Text(
+      text = if (count == 1) "1 Song" else "$count Songs",
+      style = MaterialTheme.typography.titleSmall,
+      fontWeight = FontWeight.Medium,
+      modifier = Modifier.padding(start = 4.dp),
+    )
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SortSheet(
+  selected: Int,
+  desc: Boolean,
+  onPick: (Int) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  ModalBottomSheet(onDismissRequest = onDismiss, containerColor = popupColor()) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+      Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+        Text("Sort by", style = MaterialTheme.typography.titleMedium)
+        Text(
+          "Select the option once more to sort in descending order",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.outline,
+        )
+      }
+      HorizontalDivider()
+      sortNames.forEachIndexed { i, name ->
+        val on = i == selected
+        Row(
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 12.dp, vertical = 2.dp)
+              .clip(RoundedCornerShape(50))
+              .background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+              .clickable { onPick(i) }
+              .padding(horizontal = 16.dp, vertical = 14.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.CenterStart) {
+            if (on) {
+              Icon(
+                if (desc) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+              )
+            }
+          }
+          Text(
+            name,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
+          )
+        }
+      }
+    }
+  }
 }
