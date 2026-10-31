@@ -1148,10 +1148,11 @@ private fun SongRow(
       title = track.title,
       subtitle = track.artist,
       leading = { TrackArt(track, 140, Modifier.size(56.dp), RoundedCornerShape(12.dp)) },
+      showHeader = false,
       items =
         buildList {
           add(SheetItem("Play", Icons.Filled.PlayArrow) { onClick() })
-          add(SheetItem("Play next", Icons.Filled.SkipNext) { actions.playNext(track) })
+          add(SheetItem("Play next", Icons.Filled.SkipNext, divider = true) { actions.playNext(track) })
           add(SheetItem("Add to playing queue", Icons.Filled.AddToQueue) { actions.addToQueue(track) })
           add(SheetItem("Add to playlist", Icons.AutoMirrored.Filled.PlaylistAdd) { actions.addToPlaylist(track) })
           add(
@@ -1167,7 +1168,7 @@ private fun SongRow(
           add(SheetItem("Details", Icons.Filled.Info) { actions.info(track) })
           add(SheetItem("Share", Icons.Filled.Share) { actions.share(track) })
           val folder = track.path.substringBeforeLast('/', "")
-          if (folder.isNotEmpty()) add(SheetItem("Blacklist", Icons.Filled.VisibilityOff, divider = true) { blacklistFolder(ctx, folder) })
+          if (folder.isNotEmpty()) add(SheetItem("Blacklist", Icons.Filled.VisibilityOff) { blacklistFolder(ctx, folder) })
           add(SheetItem("Delete from device", Icons.Filled.Delete) { actions.delete(track) })
         },
       onDismiss = { menu = false },
@@ -1874,23 +1875,20 @@ internal class SheetItem(
 )
 
 /**
- * Bottom sheet with a header and a list of actions (like the Oto song and folder menus).
- * Built on a plain Dialog so every tap reaches the rows. The sheet closes first and the chosen
- * action runs right after, so the action can change the screen behind it safely.
+ * Floating menu card (like Oto's song and folder menus): a rounded card in the middle of the screen
+ * with a "Done" button. Built on a plain Dialog so every tap reaches the rows. The card closes
+ * first and the chosen action runs right after, so the action can change the screen behind it safely.
  */
 @Composable
-internal fun ActionSheet(
-  title: String,
-  subtitle: String?,
-  leading: @Composable () -> Unit,
-  items: List<SheetItem>,
+private fun FloatingMenu(
   onDismiss: () -> Unit,
+  header: (@Composable () -> Unit)? = null,
+  body: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
-  val sheetContext = LocalContext.current
-  val maxHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.86f).dp
+  val maxHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.82f).dp
   Dialog(
     onDismissRequest = onDismiss,
-    properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    properties = DialogProperties(usePlatformDefaultWidth = false),
   ) {
     Box(
       modifier =
@@ -1901,60 +1899,88 @@ internal fun ActionSheet(
             indication = null,
             onClick = onDismiss,
           ),
-      contentAlignment = Alignment.BottomCenter,
+      contentAlignment = Alignment.Center,
     ) {
       Surface(
         modifier =
           Modifier
-            .fillMaxWidth()
+            .fillMaxWidth(0.82f)
             .heightIn(max = maxHeight)
             .clickable(
               interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
               indication = null,
               onClick = {},
             ),
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = RoundedCornerShape(28.dp),
         color = popupColor(),
       ) {
-        Column(modifier = Modifier.navigationBarsPadding()) {
-          Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-          ) {
-            leading()
-            Column {
-              Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-              if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-          }
+        Column {
+          header?.invoke()
+          Column(
+            modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(vertical = 6.dp),
+            content = body,
+          )
           HorizontalDivider()
-          Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(bottom = 12.dp)) {
-            items.forEach { item ->
-              if (item.divider) HorizontalDivider(modifier = Modifier.padding(start = 72.dp, top = 2.dp, bottom = 2.dp))
-              Row(
-                modifier =
-                  Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                      onDismiss()
-                      android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        try {
-                          item.onClick()
-                        } catch (e: Throwable) {
-                          Toast.makeText(sheetContext, "Couldn't do that: ${e.message ?: item.label}", Toast.LENGTH_LONG).show()
-                        }
-                      }
-                    }.padding(horizontal = 24.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(28.dp),
-              ) {
-                Icon(item.icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(item.label, style = MaterialTheme.typography.bodyLarge)
-              }
-            }
+          Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onDismiss) { Text("Done") }
           }
         }
+      }
+    }
+  }
+}
+
+/** Song and folder menus: a floating card of actions. Pass showHeader = false for the plain list. */
+@Composable
+internal fun ActionSheet(
+  title: String,
+  subtitle: String?,
+  leading: @Composable () -> Unit,
+  items: List<SheetItem>,
+  onDismiss: () -> Unit,
+  showHeader: Boolean = true,
+) {
+  val sheetContext = LocalContext.current
+  val headerContent: @Composable () -> Unit = {
+    Row(
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      leading()
+      Column {
+        Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      }
+    }
+    HorizontalDivider()
+  }
+  FloatingMenu(
+    onDismiss = onDismiss,
+    header = if (showHeader) headerContent else null,
+  ) {
+    items.forEach { item ->
+      if (item.divider) HorizontalDivider(modifier = Modifier.padding(start = 56.dp, top = 4.dp, bottom = 4.dp, end = 12.dp))
+      Row(
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .clickable {
+              onDismiss()
+              android.os.Handler(android.os.Looper.getMainLooper()).post {
+                try {
+                  item.onClick()
+                } catch (e: Throwable) {
+                  Toast.makeText(sheetContext, "Couldn't do that: ${e.message ?: item.label}", Toast.LENGTH_LONG).show()
+                }
+              }
+            }.heightIn(min = 46.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+      ) {
+        Icon(item.icon, null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(item.label, style = MaterialTheme.typography.bodyLarge)
       }
     }
   }
@@ -2104,7 +2130,6 @@ private fun SongsHeader(
   }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SortSheet(
   selected: Int,
@@ -2112,14 +2137,9 @@ private fun SortSheet(
   onPick: (Int) -> Unit,
   onDismiss: () -> Unit,
 ) {
-  // Compact like Oto: opens straight at its own height (never the full screen) with no drag handle.
-  ModalBottomSheet(
-    onDismissRequest = onDismiss,
-    containerColor = popupColor(),
-    sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    dragHandle = null,
-  ) {
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 8.dp)) {
+  FloatingMenu(
+    onDismiss = onDismiss,
+    header = {
       Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 10.dp)) {
         Text("Sort by", style = MaterialTheme.typography.titleMedium)
         Text(
@@ -2129,36 +2149,38 @@ private fun SortSheet(
         )
       }
       HorizontalDivider()
-      sortNames.withIndex().sortedBy { it.value.lowercase() }.forEach { (i, name) ->
-        val on = i == selected
-        Row(
-          modifier =
-            Modifier
-              .fillMaxWidth()
-              .padding(horizontal = 12.dp)
-              .clip(RoundedCornerShape(50))
-              .background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-              .clickable { onPick(i) }
-              .heightIn(min = 50.dp)
-              .padding(horizontal = 16.dp),
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
-          Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.CenterStart) {
-            if (on) {
-              Icon(
-                if (desc) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-              )
-            }
+    },
+  ) {
+    // Shown A-Z; the index is the real sort id, so the order of sortNames itself never changes
+    sortNames.withIndex().sortedBy { it.value.lowercase() }.forEach { (i, name) ->
+      val on = i == selected
+      Row(
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .clip(RoundedCornerShape(50))
+            .background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+            .clickable { onPick(i) }
+            .heightIn(min = 40.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.CenterStart) {
+          if (on) {
+            Icon(
+              if (desc) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.primary,
+            )
           }
-          Text(
-            name,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
-          )
         }
+        Text(
+          name,
+          style = MaterialTheme.typography.bodyLarge,
+          color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+          fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
+        )
       }
     }
   }
