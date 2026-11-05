@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.marlboroadvance.mpvex.preferences.AppearancePreferences
@@ -61,6 +62,9 @@ import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.ui.theme.AccentColors
 import app.marlboroadvance.mpvex.ui.theme.BackgroundPresets
+import app.marlboroadvance.mpvex.ui.theme.BackgroundWallpapers
+import app.marlboroadvance.mpvex.ui.theme.isPictureMode
+import app.marlboroadvance.mpvex.ui.theme.wallpaperMode
 import app.marlboroadvance.mpvex.ui.theme.CUSTOM_BG_IMAGE
 import app.marlboroadvance.mpvex.ui.theme.CUSTOM_BG_NONE
 import app.marlboroadvance.mpvex.ui.theme.CustomBackgroundLayer
@@ -260,6 +264,20 @@ object CustomizeThemeScreen : Screen {
                 }
               }
 
+              BackgroundWallpapers.forEach { wall ->
+                ThemeTile(
+                  selected = mode == wallpaperMode(wall.id),
+                  onClick = { preferences.customBackground.set(wallpaperMode(wall.id)) },
+                ) {
+                  Image(
+                    painter = painterResource(wall.thumb),
+                    contentDescription = "Wallpaper ${wall.id}",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                  )
+                }
+              }
+
               BackgroundPresets.forEach { preset ->
                 ThemeTile(
                   selected = mode == presetMode(preset.id),
@@ -310,7 +328,7 @@ object CustomizeThemeScreen : Screen {
                 onValueChange = { preferences.customBackgroundTransparency.set(it) },
               )
             }
-            if (mode == CUSTOM_BG_IMAGE) {
+            if (isPictureMode(mode)) {
               LabeledSlider(
                 label = "Blur",
                 value = blur,

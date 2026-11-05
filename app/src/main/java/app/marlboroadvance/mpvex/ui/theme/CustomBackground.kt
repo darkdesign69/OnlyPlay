@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import app.marlboroadvance.mpvex.R
 import app.marlboroadvance.mpvex.preferences.AppearancePreferences
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import org.koin.compose.koinInject
@@ -41,6 +42,44 @@ import java.io.File
 const val CUSTOM_BG_NONE = "none"
 const val CUSTOM_BG_IMAGE = "image"
 private const val PRESET_PREFIX = "preset:"
+private const val WALL_PREFIX = "wall:"
+
+/** Pictures that come with the app. Each has a full-size picture and a small thumbnail. */
+class BackgroundWallpaper(
+  val id: String,
+  val full: Int,
+  val thumb: Int,
+)
+
+val BackgroundWallpapers =
+  listOf(
+    BackgroundWallpaper("1", R.drawable.wall_01, R.drawable.wallthumb_01),
+    BackgroundWallpaper("2", R.drawable.wall_02, R.drawable.wallthumb_02),
+    BackgroundWallpaper("3", R.drawable.wall_03, R.drawable.wallthumb_03),
+    BackgroundWallpaper("4", R.drawable.wall_04, R.drawable.wallthumb_04),
+    BackgroundWallpaper("5", R.drawable.wall_05, R.drawable.wallthumb_05),
+    BackgroundWallpaper("6", R.drawable.wall_06, R.drawable.wallthumb_06),
+    BackgroundWallpaper("7", R.drawable.wall_07, R.drawable.wallthumb_07),
+    BackgroundWallpaper("8", R.drawable.wall_08, R.drawable.wallthumb_08),
+    BackgroundWallpaper("9", R.drawable.wall_09, R.drawable.wallthumb_09),
+    BackgroundWallpaper("10", R.drawable.wall_10, R.drawable.wallthumb_10),
+    BackgroundWallpaper("11", R.drawable.wall_11, R.drawable.wallthumb_11),
+    BackgroundWallpaper("12", R.drawable.wall_12, R.drawable.wallthumb_12),
+    BackgroundWallpaper("13", R.drawable.wall_13, R.drawable.wallthumb_13),
+  )
+
+fun wallpaperMode(id: String): String = WALL_PREFIX + id
+
+fun backgroundWallpaperFor(mode: String): BackgroundWallpaper? =
+  if (mode.startsWith(WALL_PREFIX)) {
+    val id = mode.removePrefix(WALL_PREFIX)
+    BackgroundWallpapers.firstOrNull { it.id == id }
+  } else {
+    null
+  }
+
+/** True when the background is a picture (your own or one that comes with the app). */
+fun isPictureMode(mode: String): Boolean = mode == CUSTOM_BG_IMAGE || backgroundWallpaperFor(mode) != null
 
 class BackgroundPreset(
   val id: String,
@@ -95,6 +134,7 @@ fun isCustomBackgroundActive(
 ): Boolean =
   when {
     mode == CUSTOM_BG_IMAGE -> backgroundImageFile(context).exists()
+    backgroundWallpaperFor(mode) != null -> true
     else -> backgroundPresetFor(mode) != null
   }
 
@@ -162,7 +202,18 @@ fun rememberBackgroundBitmap(
           }
         }
       } else {
-        null
+        val wall = backgroundWallpaperFor(mode)
+        if (wall != null) {
+          withContext(Dispatchers.IO) {
+            try {
+              BitmapFactory.decodeResource(context.resources, wall.full)?.asImageBitmap()
+            } catch (e: Throwable) {
+              null
+            }
+          }
+        } else {
+          null
+        }
       }
   }
   return bitmap
