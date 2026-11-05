@@ -29,7 +29,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material3.Button
-import androidx.compose.material3.AlertDialog
+import app.marlboroadvance.mpvex.ui.theme.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton

@@ -263,9 +263,10 @@ fun CustomBackgroundLayer(
 /** Makes the app's screens and panels see-through so the background shows. */
 fun ColorScheme.withTransparentPanels(transparency: Float): ColorScheme {
   val t = transparency.coerceIn(0f, 1f)
-  val panelAlpha = 1f - t * 0.85f
+  // At most 60% see-through, so the panels stay readable even with the slider all the way up
+  val panelAlpha = 1f - t * 0.6f
   // Selected items, chips and buttons stay a little more solid so they remain easy to see
-  val accentAlpha = 1f - t * 0.55f
+  val accentAlpha = 1f - t * 0.35f
   return copy(
     background = Color.Transparent,
     surface = Color.Transparent,

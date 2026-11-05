@@ -19,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -40,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -209,16 +212,19 @@ private fun crop(
 }
 
 /**
- * Full-screen camera check. With [enroll] it saves your face (a few shots); otherwise it checks the
- * person in front of the camera against the saved face. [onSuccess] runs when it worked; [onDismiss]
- * when the person leaves it (to use the PIN, pattern or password instead).
+ * Camera check shown in place (a circle with a status line under it). With [enroll] it saves your
+ * face (a few shots); otherwise it checks the person in front of the camera against the saved face.
+ * [onSuccess] runs when it worked; [onFallback] when the person gives up (to use the PIN, pattern or
+ * password instead).
  */
 @Composable
-fun FaceScanDialog(
+fun FaceScanPanel(
   enroll: Boolean,
+  circle: Dp,
   fallbackLabel: String,
   onSuccess: () -> Unit,
-  onDismiss: () -> Unit,
+  onFallback: () -> Unit,
+  modifier: Modifier = Modifier,
 ) {
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
@@ -388,8 +394,53 @@ fun FaceScanDialog(
     }
   }
 
+  Column(
+    modifier = modifier,
+    horizontalAlignment = Alignment.CenterHorizontally,
+  ) {
+    Box(
+      modifier =
+        Modifier
+          .size(circle)
+          .clip(CircleShape)
+          .background(Color(0xFF1B1B1B)),
+      contentAlignment = Alignment.Center,
+    ) {
+      if (granted) {
+        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+      }
+    }
+    Spacer(Modifier.height(10.dp))
+    Text(
+      text = if (!granted) "Camera permission is needed for face unlock" else if (done) "Done" else status,
+      style = MaterialTheme.typography.titleSmall,
+      color = if (failed || !granted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+      textAlign = TextAlign.Center,
+    )
+    if (!granted && asked) {
+      TextButton(onClick = { permission.launch(Manifest.permission.CAMERA) }) { Text("Allow camera") }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+      if (failed) {
+        TextButton(onClick = { attempt++ }) { Text("Try again") }
+      }
+      if (failed || !granted || enroll) {
+        TextButton(onClick = onFallback) { Text(if (enroll) "Cancel" else fallbackLabel) }
+      }
+    }
+  }
+}
+
+/** Face set-up in its own solid panel (it never lets the app background show through). */
+@Composable
+fun FaceScanDialog(
+  enroll: Boolean,
+  fallbackLabel: String,
+  onSuccess: () -> Unit,
+  onDismiss: () -> Unit,
+) {
   Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true)) {
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f)) {
       Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -400,33 +451,13 @@ fun FaceScanDialog(
           style = MaterialTheme.typography.titleLarge,
         )
         Spacer(Modifier.height(24.dp))
-        Box(
-          modifier =
-            Modifier
-              .size(280.dp)
-              .clip(CircleShape)
-              .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-          contentAlignment = Alignment.Center,
-        ) {
-          if (granted) {
-            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-          }
-        }
-        Spacer(Modifier.height(24.dp))
-        Text(
-          text = if (!granted) "Camera permission is needed for face unlock" else if (done) "Done" else status,
-          style = MaterialTheme.typography.titleMedium,
-          color = if (failed || !granted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-          textAlign = TextAlign.Center,
+        FaceScanPanel(
+          enroll = enroll,
+          circle = 280.dp,
+          fallbackLabel = fallbackLabel,
+          onSuccess = onSuccess,
+          onFallback = onDismiss,
         )
-        Spacer(Modifier.height(16.dp))
-        if (!granted && asked) {
-          TextButton(onClick = { permission.launch(Manifest.permission.CAMERA) }) { Text("Allow camera") }
-        }
-        if (failed) {
-          TextButton(onClick = { attempt++ }) { Text("Try again") }
-        }
-        TextButton(onClick = onDismiss) { Text(if (enroll) "Cancel" else fallbackLabel) }
       }
     }
   }

@@ -27,7 +27,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
+import app.marlboroadvance.mpvex.ui.theme.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -63,6 +63,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -322,6 +324,13 @@ object PrivacyScreen : Screen {
                 ok
               },
               onFaceRequest = { faceScan = true },
+              faceActive = faceScan,
+              faceFallback = "Use ${lockName(lockType)} instead",
+              onFaceDone = {
+                faceScan = false
+                unlocked = true
+              },
+              onFaceClose = { faceScan = false },
             )
           loading -> Text(text = "Loading…", modifier = Modifier.padding(32.dp))
           sorted.isEmpty() -> EmptyContent()
@@ -366,17 +375,6 @@ object PrivacyScreen : Screen {
           faceEnroll = false
         },
         onDismiss = { faceEnroll = false },
-      )
-    }
-    if (faceScan && !unlocked) {
-      FaceScanDialog(
-        enroll = false,
-        fallbackLabel = "Use ${lockName(lockType)} instead",
-        onSuccess = {
-          faceScan = false
-          unlocked = true
-        },
-        onDismiss = { faceScan = false },
       )
     }
     if (showChangePin) {
@@ -799,6 +797,10 @@ private fun UnlockContent(
   heading: String? = null,
   onSubmit: (String) -> Boolean,
   onFaceRequest: () -> Unit,
+  faceActive: Boolean = false,
+  faceFallback: String = "",
+  onFaceDone: () -> Unit = {},
+  onFaceClose: () -> Unit = {},
 ) {
   var entry by remember { mutableStateOf("") }
   var wrong by remember { mutableStateOf(false) }
@@ -811,10 +813,20 @@ private fun UnlockContent(
   when (type) {
     LOCK_PATTERN ->
       Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
       ) {
+        if (faceActive) {
+          FaceScanPanel(
+            enroll = false,
+            circle = 150.dp,
+            fallbackLabel = faceFallback,
+            onSuccess = onFaceDone,
+            onFallback = onFaceClose,
+            modifier = Modifier.padding(bottom = 16.dp),
+          )
+        }
         Text(title, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(12.dp))
         Text(text = if (wrong) wrongText else " ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
@@ -831,10 +843,20 @@ private fun UnlockContent(
       }
     LOCK_PASSWORD ->
       Column(
-        modifier = Modifier.fillMaxSize().padding(vertical = 24.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Top),
       ) {
+        if (faceActive) {
+          FaceScanPanel(
+            enroll = false,
+            circle = 150.dp,
+            fallbackLabel = faceFallback,
+            onSuccess = onFaceDone,
+            onFallback = onFaceClose,
+            modifier = Modifier.padding(bottom = 16.dp),
+          )
+        }
         Text(title, style = MaterialTheme.typography.titleMedium)
         PasswordEntry("Password", entry, { entry = it; wrong = false }) {
           if (!onSubmit(entry)) {
@@ -863,8 +885,18 @@ private fun UnlockContent(
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center,
         ) {
+          if (faceActive) {
+          FaceScanPanel(
+            enroll = false,
+            circle = 150.dp,
+            fallbackLabel = faceFallback,
+            onSuccess = onFaceDone,
+            onFallback = onFaceClose,
+            modifier = Modifier.padding(bottom = 16.dp),
+          )
+        }
           Text(title, style = MaterialTheme.typography.titleMedium)
-          Spacer(Modifier.height(36.dp))
+          Spacer(Modifier.height(if (faceActive) 20.dp else 36.dp))
           PinDots(count = maxOf(4, entry.length), filled = entry.length)
           Spacer(Modifier.height(24.dp))
           Text(

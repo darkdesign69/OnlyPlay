@@ -322,7 +322,7 @@ object PlaylistScreen : Screen {
         val selectedPlaylist = selectionManager.getSelectedItems().firstOrNull()
         if (selectedPlaylist != null) {
           var playlistName by remember { mutableStateOf(selectedPlaylist.playlist.name) }
-          androidx.compose.material3.AlertDialog(
+          app.marlboroadvance.mpvex.ui.theme.AlertDialog(
             onDismissRequest = { showRenameDialog = false },
             title = { Text("Rename Playlist") },
             text = {

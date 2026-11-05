@@ -286,7 +286,7 @@ data class VideoListScreen(
     }
 
     if (hideConfirmOpen.value) {
-      androidx.compose.material3.AlertDialog(
+      app.marlboroadvance.mpvex.ui.theme.AlertDialog(
         onDismissRequest = { hideConfirmOpen.value = false },
         title = { Text("Hide in Privacy?") },
         text = {
@@ -603,7 +603,7 @@ data class VideoListScreen(
 
       // Private Space Completion Dialog
       if (showPrivateSpaceCompletionDialog.value) {
-        androidx.compose.material3.AlertDialog(
+        app.marlboroadvance.mpvex.ui.theme.AlertDialog(
           onDismissRequest = { showPrivateSpaceCompletionDialog.value = false },
           title = {
             Text(

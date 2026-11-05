@@ -710,7 +710,7 @@ private fun StreamUrlDialog(
   onDismiss: () -> Unit,
   onCopy: () -> Unit,
 ) {
-  androidx.compose.material3.AlertDialog(
+  app.marlboroadvance.mpvex.ui.theme.AlertDialog(
     onDismissRequest = onDismiss,
     title = { Text("Stream URL") },
     text = {
@@ -754,7 +754,7 @@ private fun RemoveFromPlaylistDialog(
 
   val itemText = if (itemCount == 1) "video" else "videos"
 
-  androidx.compose.material3.AlertDialog(
+  app.marlboroadvance.mpvex.ui.theme.AlertDialog(
     onDismissRequest = onDismiss,
     title = {
       Text(
