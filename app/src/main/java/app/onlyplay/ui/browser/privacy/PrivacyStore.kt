@@ -38,27 +38,49 @@ object PrivacyStore {
   }
 
   fun load(context: Context): List<HiddenVideo> {
+    val result = mutableListOf<HiddenVideo>()
     val file = indexFile(context)
-    if (!file.exists()) return emptyList()
-    return try {
-      val array = JSONArray(file.readText())
-      val result = mutableListOf<HiddenVideo>()
-      for (i in 0 until array.length()) {
-        val o = array.getJSONObject(i)
-        val video =
-          HiddenVideo(
-            id = o.getString("id"),
-            name = o.getString("name"),
-            originalPath = o.getString("originalPath"),
-            hiddenPath = o.getString("hiddenPath"),
-            size = o.optLong("size", 0L),
-          )
-        if (File(video.hiddenPath).isFile) result.add(video)
+    if (file.exists()) {
+      try {
+        val array = JSONArray(file.readText())
+        for (i in 0 until array.length()) {
+          val o = array.getJSONObject(i)
+          val video =
+            HiddenVideo(
+              id = o.getString("id"),
+              name = o.getString("name"),
+              originalPath = o.getString("originalPath"),
+              hiddenPath = o.getString("hiddenPath"),
+              size = o.optLong("size", 0L),
+            )
+          if (File(video.hiddenPath).isFile) result.add(video)
+        }
+      } catch (e: Exception) {
+        // fall through: files in the private folder are still picked up below
       }
-      result
-    } catch (e: Exception) {
-      emptyList()
     }
+    // Safety net: a video that sits in the private folder but is missing from the list (for
+    // example the list was lost) is still shown, and goes back to Movies/Recovered when restored.
+    try {
+      val known = result.map { it.hiddenPath }.toSet()
+      val recovered = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MOVIES), "Recovered")
+      privateDir(context).listFiles()?.forEach { f ->
+        if (f.isFile && !f.name.startsWith(".") && f.absolutePath !in known) {
+          result.add(
+            HiddenVideo(
+              id = "found-" + f.absolutePath.hashCode().toString(),
+              name = f.name,
+              originalPath = File(recovered, f.name).absolutePath,
+              hiddenPath = f.absolutePath,
+              size = f.length(),
+            ),
+          )
+        }
+      }
+    } catch (e: Exception) {
+      // ignore
+    }
+    return result
   }
 
   private fun save(
