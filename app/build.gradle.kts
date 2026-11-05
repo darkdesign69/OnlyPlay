@@ -192,6 +192,12 @@ dependencies {
   debugImplementation(libs.androidx.ui.tooling)
   implementation(libs.bundles.compose.navigation3)
   implementation(libs.androidx.appcompat)
+  // Face unlock for Privacy: front camera, face detection and the FaceNet model
+  implementation("androidx.camera:camera-camera2:1.4.2")
+  implementation("androidx.camera:camera-lifecycle:1.4.2")
+  implementation("androidx.camera:camera-view:1.4.2")
+  implementation("com.google.mlkit:face-detection:16.1.7")
+  implementation("org.tensorflow:tensorflow-lite:2.16.1")
   implementation(libs.androidx.compose.constraintlayout)
   implementation("androidx.preference:preference-ktx:1.2.1")
   implementation("androidx.constraintlayout:constraintlayout:2.2.0")

@@ -150,7 +150,9 @@ object PrivacyScreen : Screen {
     var loading by remember { mutableStateOf(true) }
     var menuOpen by remember { mutableStateOf(false) }
     var showImport by remember { mutableStateOf(false) }
-    val canFace = remember { faceAvailable(context) }
+    val canFace = remember { FaceLock.available(context) }
+    var faceScan by rememberSaveable { mutableStateOf(false) }
+    var faceEnroll by rememberSaveable { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showChangePin by remember { mutableStateOf(false) }
@@ -273,8 +275,13 @@ object PrivacyScreen : Screen {
                       text = { Text("Unlock with face") },
                       trailingIcon = { Checkbox(checked = faceOn, onCheckedChange = null) },
                       onClick = {
-                        preferences.privacyFingerprint.set(!faceOn)
                         menuOpen = false
+                        if (faceOn) {
+                          preferences.privacyFingerprint.set(false)
+                          FaceLock.clear(context)
+                        } else {
+                          faceEnroll = true
+                        }
                       },
                     )
                   }
@@ -300,8 +307,9 @@ object PrivacyScreen : Screen {
                 preferences.privacyPinSalt.set(salt)
                 preferences.privacyPinHash.set(hashPrivacyPin(salt, secret))
                 preferences.privacyLockType.set(type)
-                preferences.privacyFingerprint.set(useFace)
+                preferences.privacyFingerprint.set(false)
                 unlocked = true
+                if (useFace) faceEnroll = true
               },
             )
           !unlocked ->
@@ -313,7 +321,7 @@ object PrivacyScreen : Screen {
                 if (ok) unlocked = true
                 ok
               },
-              onFaceSuccess = { unlocked = true },
+              onFaceRequest = { faceScan = true },
             )
           loading -> Text(text = "Loading…", modifier = Modifier.padding(32.dp))
           sorted.isEmpty() -> EmptyContent()
@@ -349,6 +357,28 @@ object PrivacyScreen : Screen {
       }
     }
 
+    if (faceEnroll) {
+      FaceScanDialog(
+        enroll = true,
+        fallbackLabel = "Cancel",
+        onSuccess = {
+          preferences.privacyFingerprint.set(true)
+          faceEnroll = false
+        },
+        onDismiss = { faceEnroll = false },
+      )
+    }
+    if (faceScan && !unlocked) {
+      FaceScanDialog(
+        enroll = false,
+        fallbackLabel = "Use ${lockName(lockType)} instead",
+        onSuccess = {
+          faceScan = false
+          unlocked = true
+        },
+        onDismiss = { faceScan = false },
+      )
+    }
     if (showChangePin) {
       ChangeLockDialog(
         currentType = lockType,
@@ -437,53 +467,8 @@ private fun playHidden(
 }
 
 // ---------------------------------------------------------------------------------------------
-// Face unlock
+// Face unlock (see PrivacyFace.kt)
 // ---------------------------------------------------------------------------------------------
-
-private fun faceAvailable(context: Context): Boolean =
-  try {
-    val bm = context.getSystemService(BiometricManager::class.java)
-    when {
-      bm == null -> false
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-        bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> bm.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS
-      else -> false
-    }
-  } catch (_: Exception) {
-    false
-  }
-
-private fun promptFace(
-  context: Context,
-  onSuccess: () -> Unit,
-) {
-  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-  try {
-    val executor = ContextCompat.getMainExecutor(context)
-    val builder =
-      BiometricPrompt
-        .Builder(context)
-        .setTitle("Unlock Privacy")
-        .setSubtitle("Look at your phone")
-        .setConfirmationRequired(false)
-        .setNegativeButton("Use lock", executor) { _, _ -> }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
-    }
-    builder.build().authenticate(
-      CancellationSignal(),
-      executor,
-      object : BiometricPrompt.AuthenticationCallback() {
-        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
-          onSuccess()
-        }
-      },
-    )
-  } catch (_: Exception) {
-    // face unlock not set up: the PIN, pattern or password still works
-  }
-}
 
 // ---------------------------------------------------------------------------------------------
 // PIN screens (dots + number pad)
@@ -813,13 +798,12 @@ private fun UnlockContent(
   faceEnabled: Boolean,
   heading: String? = null,
   onSubmit: (String) -> Boolean,
-  onFaceSuccess: () -> Unit,
+  onFaceRequest: () -> Unit,
 ) {
-  val context = LocalContext.current
   var entry by remember { mutableStateOf("") }
   var wrong by remember { mutableStateOf(false) }
   LaunchedEffect(faceEnabled) {
-    if (faceEnabled) promptFace(context, onFaceSuccess)
+    if (faceEnabled) onFaceRequest()
   }
   val title = heading ?: "Enter ${lockName(type)}"
   val wrongText = "Wrong ${lockName(type)}"
@@ -842,7 +826,7 @@ private fun UnlockContent(
         )
         if (faceEnabled) {
           Spacer(Modifier.height(16.dp))
-          TextButton(onClick = { promptFace(context, onFaceSuccess) }) { Text("Use face unlock") }
+          TextButton(onClick = { onFaceRequest() }) { Text("Use face unlock") }
         }
       }
     LOCK_PASSWORD ->
@@ -869,7 +853,7 @@ private fun UnlockContent(
           enabled = entry.isNotEmpty(),
         ) { Text("Unlock") }
         if (faceEnabled) {
-          TextButton(onClick = { promptFace(context, onFaceSuccess) }) { Text("Use face unlock") }
+          TextButton(onClick = { onFaceRequest() }) { Text("Use face unlock") }
         }
       }
     else ->
@@ -909,7 +893,7 @@ private fun UnlockContent(
           onBackspace = { if (entry.isNotEmpty()) entry = entry.dropLast(1) },
           leftSlot = {
             if (faceEnabled) {
-              IconButton(onClick = { promptFace(context, onFaceSuccess) }) {
+              IconButton(onClick = { onFaceRequest() }) {
                 Icon(Icons.Filled.Face, contentDescription = "Use face unlock", modifier = Modifier.size(38.dp))
               }
             }
@@ -944,7 +928,7 @@ private fun ChangeLockDialog(
               if (ok) verified = true
               ok
             },
-            onFaceSuccess = {},
+            onFaceRequest = {},
           )
         } else {
           SetLockContent(showFace = false, onCreate = { t, s, _ -> onNewLock(t, s) })
