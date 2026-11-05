@@ -72,6 +72,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.LockOpen
@@ -147,6 +152,7 @@ object PrivacyScreen : Screen {
     val gridView by preferences.privacyGrid.collectAsState()
     val sortKey by preferences.privacySort.collectAsState()
     val sortDesc by preferences.privacyDesc.collectAsState()
+    val gridColumns by preferences.privacyColumns.collectAsState()
     var unlocked by rememberSaveable { mutableStateOf(false) }
     var hidden by remember { mutableStateOf<List<HiddenVideo>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -236,58 +242,8 @@ object PrivacyScreen : Screen {
               IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, contentDescription = "Delete") }
             }
             if (videosMode && !selecting) {
-              IconButton(onClick = { preferences.privacyGrid.set(!gridView) }) {
-                Icon(
-                  if (gridView) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                  contentDescription = if (gridView) "List view" else "Grid view",
-                )
-              }
-              Box {
-                IconButton(onClick = { menuOpen = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "More") }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                  Text(
-                    "Sort by",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                  )
-                  listOf("Name", "Size", "Date added").forEachIndexed { i, label ->
-                    DropdownMenuItem(
-                      text = { Text(label + if (sortKey == i) (if (sortDesc) "   ↓" else "   ↑") else "") },
-                      onClick = {
-                        if (sortKey == i) {
-                          preferences.privacyDesc.set(!sortDesc)
-                        } else {
-                          preferences.privacySort.set(i)
-                        }
-                        menuOpen = false
-                      },
-                    )
-                  }
-                  HorizontalDivider()
-                  DropdownMenuItem(
-                    text = { Text("Change lock") },
-                    onClick = {
-                      menuOpen = false
-                      showChangePin = true
-                    },
-                  )
-                  if (canFace) {
-                    DropdownMenuItem(
-                      text = { Text("Unlock with face") },
-                      trailingIcon = { Checkbox(checked = faceOn, onCheckedChange = null) },
-                      onClick = {
-                        menuOpen = false
-                        if (faceOn) {
-                          preferences.privacyFingerprint.set(false)
-                          FaceLock.clear(context)
-                        } else {
-                          faceEnroll = true
-                        }
-                      },
-                    )
-                  }
-                }
+              IconButton(onClick = { menuOpen = true }) {
+                Icon(Icons.Filled.GridView, contentDescription = "View and sort options")
               }
             }
           },
@@ -336,7 +292,7 @@ object PrivacyScreen : Screen {
           sorted.isEmpty() -> EmptyContent()
           gridView ->
             LazyVerticalGrid(
-              columns = GridCells.Fixed(2),
+              columns = GridCells.Fixed(gridColumns),
               modifier = Modifier.fillMaxSize(),
               contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 96.dp),
               horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -366,6 +322,34 @@ object PrivacyScreen : Screen {
       }
     }
 
+    if (menuOpen) {
+      PrivacyOptionsDialog(
+        gridView = gridView,
+        columns = gridColumns,
+        sortKey = sortKey,
+        sortDesc = sortDesc,
+        canFace = canFace,
+        faceOn = faceOn,
+        onGrid = { preferences.privacyGrid.set(it) },
+        onColumns = { preferences.privacyColumns.set(it) },
+        onSortKey = { preferences.privacySort.set(it) },
+        onSortDesc = { preferences.privacyDesc.set(it) },
+        onChangeLock = {
+          menuOpen = false
+          showChangePin = true
+        },
+        onToggleFace = {
+          menuOpen = false
+          if (faceOn) {
+            preferences.privacyFingerprint.set(false)
+            FaceLock.clear(context)
+          } else {
+            faceEnroll = true
+          }
+        },
+        onDone = { menuOpen = false },
+      )
+    }
     if (faceEnroll) {
       FaceScanDialog(
         enroll = true,
@@ -1091,6 +1075,114 @@ private fun HiddenVideoCard(
       color = MaterialTheme.colorScheme.outline,
     )
   }
+}
+
+@Composable
+private fun OptionTile(
+  icon: androidx.compose.ui.graphics.vector.ImageVector,
+  label: String,
+  selected: Boolean,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+  Column(
+    modifier = modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+  ) {
+    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(30.dp))
+    Spacer(Modifier.height(4.dp))
+    Text(label, style = MaterialTheme.typography.labelLarge, color = tint, maxLines = 1)
+  }
+}
+
+@Composable
+private fun PrivacyOptionsDialog(
+  gridView: Boolean,
+  columns: Int,
+  sortKey: Int,
+  sortDesc: Boolean,
+  canFace: Boolean,
+  faceOn: Boolean,
+  onGrid: (Boolean) -> Unit,
+  onColumns: (Int) -> Unit,
+  onSortKey: (Int) -> Unit,
+  onSortDesc: (Boolean) -> Unit,
+  onChangeLock: () -> Unit,
+  onToggleFace: () -> Unit,
+  onDone: () -> Unit,
+) {
+  AlertDialog(
+    onDismissRequest = onDone,
+    title = null,
+    text = {
+      Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Text("Layout", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+          OptionTile(Icons.AutoMirrored.Filled.ViewList, "List", !gridView, { onGrid(false) })
+          OptionTile(Icons.Filled.GridView, "Grid", gridView, { onGrid(true) })
+        }
+        if (gridView) {
+          HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+          Text("Grid columns", style = MaterialTheme.typography.titleMedium)
+          androidx.compose.material3.Slider(
+            value = columns.toFloat(),
+            onValueChange = { onColumns(it.toInt().coerceIn(2, 4)) },
+            valueRange = 2f..4f,
+            steps = 1,
+          )
+          Text(
+            "$columns columns",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+          )
+        }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+        Text("Sort", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+          OptionTile(Icons.Filled.Title, "Title", sortKey == 0, { onSortKey(0) })
+          OptionTile(Icons.Filled.CalendarToday, "Date", sortKey == 2, { onSortKey(2) })
+          OptionTile(Icons.Filled.SwapVert, "Size", sortKey == 1, { onSortKey(1) })
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          FilterChip(
+            selected = !sortDesc,
+            onClick = { onSortDesc(false) },
+            label = { Text("A-Z / Oldest") },
+            leadingIcon = { Icon(Icons.Filled.ArrowUpward, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            modifier = Modifier.weight(1f),
+          )
+          FilterChip(
+            selected = sortDesc,
+            onClick = { onSortDesc(true) },
+            label = { Text("Z-A / Newest") },
+            leadingIcon = { Icon(Icons.Filled.ArrowDownward, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            modifier = Modifier.weight(1f),
+          )
+        }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+        Text("Lock", style = MaterialTheme.typography.titleMedium)
+        Row(
+          modifier = Modifier.fillMaxWidth().clickable(onClick = onChangeLock).padding(vertical = 12.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) { Text("Change lock", modifier = Modifier.weight(1f)) }
+        if (canFace) {
+          Row(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onToggleFace).padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            Text("Unlock with face", modifier = Modifier.weight(1f))
+            Checkbox(checked = faceOn, onCheckedChange = null)
+          }
+        }
+      }
+    },
+    confirmButton = { TextButton(onClick = onDone) { Text("Done") } },
+  )
 }
 
 @Composable
