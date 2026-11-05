@@ -389,6 +389,7 @@ object FolderListScreen : Screen {
             onSettingsClick = {
               backstack.add(app.marlboroadvance.mpvex.ui.preferences.PreferencesScreen)
             },
+            onPrivacyClick = { backstack.add(app.marlboroadvance.mpvex.ui.browser.privacy.PrivacyScreen) },
           )
         } else {
           BrowserTopBar(
@@ -528,7 +529,6 @@ object FolderListScreen : Screen {
               androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
               LibraryChips(
                 onMusicClick = { backstack.add(app.marlboroadvance.mpvex.ui.browser.music.MusicScreen) },
-                onPrivacyClick = { backstack.add(app.marlboroadvance.mpvex.ui.browser.privacy.PrivacyScreen) },
               )
               Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
               FolderListContent(

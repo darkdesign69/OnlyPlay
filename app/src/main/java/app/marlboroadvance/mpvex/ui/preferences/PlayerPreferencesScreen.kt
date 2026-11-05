@@ -414,83 +414,44 @@ object PlayerPreferencesScreen : Screen {
                 
                 PreferenceDivider()
                 
-                SliderColorRow(
-                  title = "Volume bar colour",
-                  color = customVolumeColor,
+                SliderGradientRow(
+                  title = "Volume bar gradient colour",
+                  top = customVolumeColor,
+                  bottom = customVolumeBottom,
                   onClick = { picking = 1 },
                 )
-                
+
                 PreferenceDivider()
-                
-                SliderColorRow(
-                  title = "Brightness bar colour",
-                  color = customBrightnessColor,
+
+                SliderGradientRow(
+                  title = "Brightness bar gradient colour",
+                  top = customBrightnessColor,
+                  bottom = customBrightnessBottom,
                   onClick = { picking = 2 },
                 )
-                
-                PreferenceDivider()
-
-                SliderColorRow(
-                  title = "Volume bar bottom colour",
-                  color = customVolumeBottom,
-                  onClick = { picking = 3 },
-                )
-
-                PreferenceDivider()
-
-                SliderColorRow(
-                  title = "Brightness bar bottom colour",
-                  color = customBrightnessBottom,
-                  onClick = { picking = 4 },
-                )
-
-                if (picking == 3) {
-                  SliderColorPickerDialog(
-                    title = "Volume bar bottom colour",
-                    initialColor = customVolumeBottom,
-                    otherColor = customVolumeColor,
-                    isBottom = true,
-                    onDismiss = { picking = 0 },
-                    onConfirm = {
-                      preferences.sliderCustomVolumeBottomColor.set(it)
-                      picking = 0
-                    },
-                  )
-                }
-                if (picking == 4) {
-                  SliderColorPickerDialog(
-                    title = "Brightness bar bottom colour",
-                    initialColor = customBrightnessBottom,
-                    otherColor = customBrightnessColor,
-                    isBottom = true,
-                    onDismiss = { picking = 0 },
-                    onConfirm = {
-                      preferences.sliderCustomBrightnessBottomColor.set(it)
-                      picking = 0
-                    },
-                  )
-                }
 
                 if (picking == 1) {
-                  SliderColorPickerDialog(
-                    title = "Volume bar colour",
-                    initialColor = customVolumeColor,
-                    otherColor = customVolumeBottom,
+                  SliderGradientPickerDialog(
+                    title = "Volume bar gradient colour",
+                    initialTop = customVolumeColor,
+                    initialBottom = customVolumeBottom,
                     onDismiss = { picking = 0 },
-                    onConfirm = {
-                      preferences.sliderCustomVolumeColor.set(it)
+                    onConfirm = { t, bt ->
+                      preferences.sliderCustomVolumeColor.set(t)
+                      preferences.sliderCustomVolumeBottomColor.set(bt)
                       picking = 0
                     },
                   )
                 }
                 if (picking == 2) {
-                  SliderColorPickerDialog(
-                    title = "Brightness bar colour",
-                    initialColor = customBrightnessColor,
-                    otherColor = customBrightnessBottom,
+                  SliderGradientPickerDialog(
+                    title = "Brightness bar gradient colour",
+                    initialTop = customBrightnessColor,
+                    initialBottom = customBrightnessBottom,
                     onDismiss = { picking = 0 },
-                    onConfirm = {
-                      preferences.sliderCustomBrightnessColor.set(it)
+                    onConfirm = { t, bt ->
+                      preferences.sliderCustomBrightnessColor.set(t)
+                      preferences.sliderCustomBrightnessBottomColor.set(bt)
                       picking = 0
                     },
                   )

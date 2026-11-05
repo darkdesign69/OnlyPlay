@@ -275,6 +275,7 @@ data class VideoListScreen(
         onPinCreated = { pin ->
           val salt = app.marlboroadvance.mpvex.ui.browser.privacy.newPrivacySalt()
           browserPreferences.privacyPinSalt.set(salt)
+          browserPreferences.privacyLockType.set("pin")
           browserPreferences.privacyPinHash.set(
             app.marlboroadvance.mpvex.ui.browser.privacy.hashPrivacyPin(salt, pin),
           )
@@ -425,7 +426,6 @@ data class VideoListScreen(
         if (embedded && !selectionManager.isInSelectionMode) {
           app.marlboroadvance.mpvex.ui.browser.folderlist.LibraryChips(
             onMusicClick = { backstack.add(app.marlboroadvance.mpvex.ui.browser.music.MusicScreen) },
-            onPrivacyClick = { backstack.add(app.marlboroadvance.mpvex.ui.browser.privacy.PrivacyScreen) },
           )
         }
         VideoListContent(

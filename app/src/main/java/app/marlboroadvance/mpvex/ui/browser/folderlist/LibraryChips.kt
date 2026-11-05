@@ -22,11 +22,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/** Shortcut chips shown above the folder list: Music and Privacy. */
+/** Shortcut chips shown above the folder list: Music. */
 @Composable
 fun LibraryChips(
   onMusicClick: () -> Unit,
-  onPrivacyClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Row(
@@ -38,7 +37,6 @@ fun LibraryChips(
     horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
     LibraryChip(icon = Icons.Filled.MusicNote, label = "Music", highlighted = true, onClick = onMusicClick)
-    LibraryChip(icon = Icons.Filled.Lock, label = "Privacy", onClick = onPrivacyClick)
   }
 }
 

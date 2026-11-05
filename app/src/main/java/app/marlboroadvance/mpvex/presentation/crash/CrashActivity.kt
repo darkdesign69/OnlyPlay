@@ -163,7 +163,7 @@ class CrashActivity : ComponentActivity() {
       activity: Activity,
     ) {
       withContext(NonCancellable) {
-        val file = File(activity.cacheDir, "mpvex_logs.txt")
+        val file = File(activity.cacheDir, "onlyplay_logs.txt")
         if (file.exists()) file.delete()
         file.createNewFile()
         file.appendText(concatLogs(deviceInfo, exceptionString, logcat))

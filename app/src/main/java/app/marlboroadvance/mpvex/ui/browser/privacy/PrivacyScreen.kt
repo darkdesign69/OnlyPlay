@@ -1,6 +1,26 @@
 package app.marlboroadvance.mpvex.ui.browser.privacy
 
 import android.content.Context
+import android.hardware.biometrics.BiometricManager
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material3.FilterChip
+import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.delay
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -51,7 +71,6 @@ import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
@@ -108,7 +127,7 @@ import java.io.File
 
 /**
  * Privacy: videos you hide live here. They are removed from your folders, the gallery and other
- * apps, and can only be played from this screen after entering the PIN (or fingerprint).
+ * apps, and can only be played from this screen after unlocking (PIN, pattern or password, or face).
  */
 @Serializable
 object PrivacyScreen : Screen {
@@ -121,7 +140,8 @@ object PrivacyScreen : Screen {
     val preferences = koinInject<BrowserPreferences>()
 
     val pinHash by preferences.privacyPinHash.collectAsState()
-    val fingerprintOn by preferences.privacyFingerprint.collectAsState()
+    val faceOn by preferences.privacyFingerprint.collectAsState()
+    val lockType by preferences.privacyLockType.collectAsState()
     val gridView by preferences.privacyGrid.collectAsState()
     val sortKey by preferences.privacySort.collectAsState()
     val sortDesc by preferences.privacyDesc.collectAsState()
@@ -130,7 +150,7 @@ object PrivacyScreen : Screen {
     var loading by remember { mutableStateOf(true) }
     var menuOpen by remember { mutableStateOf(false) }
     var showImport by remember { mutableStateOf(false) }
-    val canFingerprint = remember { fingerprintAvailable(context) }
+    val canFace = remember { faceAvailable(context) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showChangePin by remember { mutableStateOf(false) }
@@ -174,7 +194,7 @@ object PrivacyScreen : Screen {
             Text(
               text =
                 when {
-                  setupMode -> "Set PIN"
+                  setupMode -> "Set lock"
                   videosMode && selecting -> "${selectedIds.size} selected"
                   videosMode -> "Private Videos"
                   else -> "Privacy"
@@ -242,18 +262,18 @@ object PrivacyScreen : Screen {
                   }
                   HorizontalDivider()
                   DropdownMenuItem(
-                    text = { Text("Change PIN") },
+                    text = { Text("Change lock") },
                     onClick = {
                       menuOpen = false
                       showChangePin = true
                     },
                   )
-                  if (canFingerprint) {
+                  if (canFace) {
                     DropdownMenuItem(
-                      text = { Text("Unlock with fingerprint") },
-                      trailingIcon = { Checkbox(checked = fingerprintOn, onCheckedChange = null) },
+                      text = { Text("Unlock with face") },
+                      trailingIcon = { Checkbox(checked = faceOn, onCheckedChange = null) },
                       onClick = {
-                        preferences.privacyFingerprint.set(!fingerprintOn)
+                        preferences.privacyFingerprint.set(!faceOn)
                         menuOpen = false
                       },
                     )
@@ -273,25 +293,27 @@ object PrivacyScreen : Screen {
       Box(modifier = Modifier.fillMaxSize().padding(padding)) {
         when {
           setupMode ->
-            SetPinContent(
-              canFingerprint = canFingerprint,
-              onCreate = { pin, useFingerprint ->
+            SetLockContent(
+              showFace = canFace,
+              onCreate = { type, secret, useFace ->
                 val salt = newPrivacySalt()
                 preferences.privacyPinSalt.set(salt)
-                preferences.privacyPinHash.set(hashPrivacyPin(salt, pin))
-                preferences.privacyFingerprint.set(useFingerprint)
+                preferences.privacyPinHash.set(hashPrivacyPin(salt, secret))
+                preferences.privacyLockType.set(type)
+                preferences.privacyFingerprint.set(useFace)
                 unlocked = true
               },
             )
           !unlocked ->
             UnlockContent(
-              fingerprintEnabled = fingerprintOn && canFingerprint,
-              onSubmit = { pin ->
-                val ok = hashPrivacyPin(preferences.privacyPinSalt.get(), pin) == preferences.privacyPinHash.get()
+              type = lockType,
+              faceEnabled = faceOn && canFace,
+              onSubmit = { secret ->
+                val ok = hashPrivacyPin(preferences.privacyPinSalt.get(), secret) == preferences.privacyPinHash.get()
                 if (ok) unlocked = true
                 ok
               },
-              onFingerprintSuccess = { unlocked = true },
+              onFaceSuccess = { unlocked = true },
             )
           loading -> Text(text = "Loading…", modifier = Modifier.padding(32.dp))
           sorted.isEmpty() -> EmptyContent()
@@ -328,15 +350,17 @@ object PrivacyScreen : Screen {
     }
 
     if (showChangePin) {
-      ChangePinDialog(
-        verify = { pin -> hashPrivacyPin(preferences.privacyPinSalt.get(), pin) == preferences.privacyPinHash.get() },
+      ChangeLockDialog(
+        currentType = lockType,
+        verify = { secret -> hashPrivacyPin(preferences.privacyPinSalt.get(), secret) == preferences.privacyPinHash.get() },
         onDismiss = { showChangePin = false },
-        onNewPin = { pin ->
+        onNewLock = { type, secret ->
           val salt = newPrivacySalt()
           preferences.privacyPinSalt.set(salt)
-          preferences.privacyPinHash.set(hashPrivacyPin(salt, pin))
+          preferences.privacyPinHash.set(hashPrivacyPin(salt, secret))
+          preferences.privacyLockType.set(type)
           showChangePin = false
-          Toast.makeText(context, "PIN changed", Toast.LENGTH_SHORT).show()
+          Toast.makeText(context, "Lock changed", Toast.LENGTH_SHORT).show()
         },
       )
     }
@@ -413,27 +437,41 @@ private fun playHidden(
 }
 
 // ---------------------------------------------------------------------------------------------
-// Fingerprint
+// Face unlock
 // ---------------------------------------------------------------------------------------------
 
-private fun fingerprintAvailable(context: Context): Boolean =
-  Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
-    context.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
+private fun faceAvailable(context: Context): Boolean =
+  try {
+    val bm = context.getSystemService(BiometricManager::class.java)
+    when {
+      bm == null -> false
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
+        bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> bm.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS
+      else -> false
+    }
+  } catch (_: Exception) {
+    false
+  }
 
-private fun promptFingerprint(
+private fun promptFace(
   context: Context,
   onSuccess: () -> Unit,
 ) {
-  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
+  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
   try {
     val executor = ContextCompat.getMainExecutor(context)
-    val prompt =
+    val builder =
       BiometricPrompt
         .Builder(context)
         .setTitle("Unlock Privacy")
-        .setNegativeButton("Use PIN", executor) { _, _ -> }
-        .build()
-    prompt.authenticate(
+        .setSubtitle("Look at your phone")
+        .setConfirmationRequired(false)
+        .setNegativeButton("Use lock", executor) { _, _ -> }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+    }
+    builder.build().authenticate(
       CancellationSignal(),
       executor,
       object : BiometricPrompt.AuthenticationCallback() {
@@ -443,7 +481,7 @@ private fun promptFingerprint(
       },
     )
   } catch (_: Exception) {
-    // no fingerprint enrolled: the PIN still works
+    // face unlock not set up: the PIN, pattern or password still works
   }
 }
 
@@ -504,25 +542,162 @@ private fun PinKeypad(
   }
 }
 
+private const val LOCK_PIN = "pin"
+private const val LOCK_PATTERN = "pattern"
+private const val LOCK_PASSWORD = "password"
+
+private fun lockName(type: String): String =
+  when (type) {
+    LOCK_PATTERN -> "pattern"
+    LOCK_PASSWORD -> "password"
+    else -> "PIN"
+  }
+
 @Composable
-private fun SetPinContent(
-  canFingerprint: Boolean,
-  onCreate: (String, Boolean) -> Unit,
+private fun PatternPad(
+  onComplete: (String) -> Unit,
+  modifier: Modifier = Modifier,
+  error: Boolean = false,
 ) {
+  val primary = MaterialTheme.colorScheme.primary
+  val errorColor = MaterialTheme.colorScheme.error
+  val idle = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+  var boxSize by remember { mutableStateOf(IntSize.Zero) }
+  var path by remember { mutableStateOf(listOf<Int>()) }
+  var finger by remember { mutableStateOf<Offset?>(null) }
+  var locked by remember { mutableStateOf(false) }
+  val currentOnComplete by rememberUpdatedState(onComplete)
+
+  LaunchedEffect(locked) {
+    if (locked) {
+      delay(600)
+      path = emptyList()
+      finger = null
+      locked = false
+    }
+  }
+
+  fun centerOf(i: Int): Offset {
+    val cell = boxSize.width / 3f
+    return Offset((i % 3 + 0.5f) * cell, (i / 3 + 0.5f) * cell)
+  }
+
+  fun hit(p: Offset) {
+    val cell = boxSize.width / 3f
+    for (i in 0 until 9) {
+      if (i in path) continue
+      val c = centerOf(i)
+      val dx = c.x - p.x
+      val dy = c.y - p.y
+      if (dx * dx + dy * dy < (cell * 0.3f) * (cell * 0.3f)) {
+        path = path + i
+        break
+      }
+    }
+  }
+
+  Canvas(
+    modifier =
+      modifier
+        .aspectRatio(1f)
+        .onSizeChanged { boxSize = it }
+        .pointerInput(Unit) {
+          awaitEachGesture {
+            val down = awaitFirstDown()
+            if (locked) return@awaitEachGesture
+            path = emptyList()
+            finger = down.position
+            hit(down.position)
+            drag(down.id) { change ->
+              finger = change.position
+              hit(change.position)
+              change.consume()
+            }
+            finger = null
+            if (path.isNotEmpty()) {
+              locked = true
+              currentOnComplete(path.joinToString(""))
+            }
+          }
+        },
+  ) {
+    val color = if (error) errorColor else primary
+    for (k in 0 until path.size - 1) {
+      drawLine(color, centerOf(path[k]), centerOf(path[k + 1]), strokeWidth = 8.dp.toPx(), cap = StrokeCap.Round)
+    }
+    val f = finger
+    if (f != null && path.isNotEmpty()) {
+      drawLine(color, centerOf(path.last()), f, strokeWidth = 8.dp.toPx(), cap = StrokeCap.Round)
+    }
+    for (i in 0 until 9) {
+      val sel = i in path
+      drawCircle(if (sel) color else idle, radius = if (sel) 14.dp.toPx() else 9.dp.toPx(), center = centerOf(i))
+      if (sel) drawCircle(color.copy(alpha = 0.25f), radius = 30.dp.toPx(), center = centerOf(i))
+    }
+  }
+}
+
+@Composable
+private fun PasswordEntry(
+  label: String,
+  value: String,
+  onValueChange: (String) -> Unit,
+  onDone: () -> Unit = {},
+) {
+  OutlinedTextField(
+    value = value,
+    onValueChange = onValueChange,
+    label = { Text(label) },
+    singleLine = true,
+    visualTransformation = PasswordVisualTransformation(),
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+    keyboardActions = KeyboardActions(onDone = { onDone() }),
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+  )
+}
+
+/** Choose a lock type (PIN / pattern / password) and set it. The secret is returned as text. */
+@Composable
+private fun SetLockContent(
+  showFace: Boolean,
+  onCreate: (type: String, secret: String, useFace: Boolean) -> Unit,
+) {
+  var type by remember { mutableStateOf(LOCK_PIN) }
+  var useFace by remember { mutableStateOf(showFace) }
+  Column(modifier = Modifier.fillMaxSize()) {
+    Row(
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      listOf(LOCK_PIN to "PIN", LOCK_PATTERN to "Pattern", LOCK_PASSWORD to "Password").forEach { (t, label) ->
+        FilterChip(selected = type == t, onClick = { type = t }, label = { Text(label) })
+      }
+    }
+    if (showFace) {
+      Row(
+        modifier = Modifier.fillMaxWidth().clickable { useFace = !useFace }.padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Checkbox(checked = useFace, onCheckedChange = { useFace = it })
+        Text("Unlock with face", style = MaterialTheme.typography.bodyMedium)
+      }
+    }
+    key(type) {
+      when (type) {
+        LOCK_PATTERN -> SetPatternBody { onCreate(LOCK_PATTERN, it, useFace) }
+        LOCK_PASSWORD -> SetPasswordBody { onCreate(LOCK_PASSWORD, it, useFace) }
+        else -> SetPinBody { onCreate(LOCK_PIN, it, useFace) }
+      }
+    }
+  }
+}
+
+@Composable
+private fun SetPinBody(onDone: (String) -> Unit) {
   var first by remember { mutableStateOf("") }
   var entry by remember { mutableStateOf("") }
   var error by remember { mutableStateOf(false) }
-  var useFingerprint by remember { mutableStateOf(canFingerprint) }
   Column(modifier = Modifier.fillMaxSize()) {
-    if (canFingerprint) {
-      Row(
-        modifier = Modifier.fillMaxWidth().clickable { useFingerprint = !useFingerprint }.padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Checkbox(checked = useFingerprint, onCheckedChange = { useFingerprint = it })
-        Text("Unlock with Fingerprint", style = MaterialTheme.typography.bodyMedium)
-      }
-    }
     Column(
       modifier = Modifier.weight(1f).fillMaxWidth(),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -549,7 +724,7 @@ private fun SetPinContent(
             entry = ""
             error = false
           } else if (entry == first) {
-            onCreate(entry, useFingerprint)
+            onDone(entry)
           } else {
             error = true
             first = ""
@@ -563,55 +738,43 @@ private fun SetPinContent(
 }
 
 @Composable
-private fun UnlockContent(
-  fingerprintEnabled: Boolean,
-  onSubmit: (String) -> Boolean,
-  onFingerprintSuccess: () -> Unit,
-) {
-  val context = LocalContext.current
-  var entry by remember { mutableStateOf("") }
-  var wrong by remember { mutableStateOf(false) }
-  LaunchedEffect(fingerprintEnabled) {
-    if (fingerprintEnabled) promptFingerprint(context, onFingerprintSuccess)
-  }
-  Column(modifier = Modifier.fillMaxSize()) {
-    Column(
-      modifier = Modifier.weight(1f).fillMaxWidth(),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center,
-    ) {
-      Text("Enter PIN", style = MaterialTheme.typography.titleMedium)
-      Spacer(Modifier.height(36.dp))
-      PinDots(count = maxOf(4, entry.length), filled = entry.length)
-      Spacer(Modifier.height(24.dp))
-      Text(
-        text = if (wrong) "Wrong PIN" else " ",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.error,
-      )
-      TextButton(
-        onClick = {
-          if (!onSubmit(entry)) {
-            wrong = true
-            entry = ""
+private fun SetPatternBody(onDone: (String) -> Unit) {
+  var first by remember { mutableStateOf("") }
+  var message by remember { mutableStateOf<String?>(null) }
+  var isError by remember { mutableStateOf(false) }
+  Column(
+    modifier = Modifier.fillMaxSize().padding(24.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center,
+  ) {
+    Text(if (first.isEmpty()) "Draw a pattern" else "Draw it again to confirm", style = MaterialTheme.typography.titleMedium)
+    Spacer(Modifier.height(12.dp))
+    Text(
+      text = message ?: "Connect at least 4 dots. Remember it: it can't be reset without clearing the app's data.",
+      style = MaterialTheme.typography.bodySmall,
+      color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+      textAlign = TextAlign.Center,
+    )
+    Spacer(Modifier.height(28.dp))
+    PatternPad(
+      error = isError,
+      modifier = Modifier.fillMaxWidth(0.8f),
+      onComplete = { seq ->
+        when {
+          seq.length < 4 -> {
+            message = "Connect at least 4 dots"
+            isError = true
           }
-        },
-        enabled = entry.length >= 4,
-      ) { Text("Unlock") }
-    }
-    PinKeypad(
-      onDigit = { d ->
-        if (entry.length < 8) {
-          entry += d
-          wrong = false
-          if (entry.length >= 4 && onSubmit(entry)) entry = ""
-        }
-      },
-      onBackspace = { if (entry.isNotEmpty()) entry = entry.dropLast(1) },
-      leftSlot = {
-        if (fingerprintEnabled) {
-          IconButton(onClick = { promptFingerprint(context, onFingerprintSuccess) }) {
-            Icon(Icons.Filled.Fingerprint, contentDescription = "Use fingerprint", modifier = Modifier.size(38.dp))
+          first.isEmpty() -> {
+            first = seq
+            message = null
+            isError = false
+          }
+          seq == first -> onDone(seq)
+          else -> {
+            first = ""
+            message = "The patterns don't match. Try again."
+            isError = true
           }
         }
       },
@@ -620,94 +783,172 @@ private fun UnlockContent(
 }
 
 @Composable
-private fun ChangePinDialog(
-  verify: (String) -> Boolean,
-  onDismiss: () -> Unit,
-  onNewPin: (String) -> Unit,
+private fun SetPasswordBody(onDone: (String) -> Unit) {
+  var pass by remember { mutableStateOf("") }
+  var confirm by remember { mutableStateOf("") }
+  val mismatch = confirm.isNotEmpty() && pass != confirm
+  Column(
+    modifier = Modifier.fillMaxSize().padding(vertical = 24.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Top),
+  ) {
+    Text("Set password", style = MaterialTheme.typography.titleMedium)
+    PasswordEntry("Password (at least 4 characters)", pass, { pass = it })
+    PasswordEntry("Confirm password", confirm, { confirm = it })
+    Text(
+      text = if (mismatch) "The passwords don't match" else "Remember it: it can't be reset without clearing the app's data.",
+      style = MaterialTheme.typography.bodySmall,
+      color = if (mismatch) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.padding(horizontal = 32.dp),
+    )
+    TextButton(onClick = { onDone(pass) }, enabled = pass.length >= 4 && pass == confirm) { Text("Set password") }
+  }
+}
+
+/** Asks for the current secret, by lock type. [onSubmit] returns true when it was right. */
+@Composable
+private fun UnlockContent(
+  type: String,
+  faceEnabled: Boolean,
+  heading: String? = null,
+  onSubmit: (String) -> Boolean,
+  onFaceSuccess: () -> Unit,
 ) {
-  var step by remember { mutableStateOf(0) }
+  val context = LocalContext.current
   var entry by remember { mutableStateOf("") }
-  var first by remember { mutableStateOf("") }
-  var error by remember { mutableStateOf<String?>(null) }
-  Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-    Surface(modifier = Modifier.fillMaxSize()) {
-      Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-          IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, contentDescription = "Close") }
-          Text("Change PIN", style = MaterialTheme.typography.titleLarge)
+  var wrong by remember { mutableStateOf(false) }
+  LaunchedEffect(faceEnabled) {
+    if (faceEnabled) promptFace(context, onFaceSuccess)
+  }
+  val title = heading ?: "Enter ${lockName(type)}"
+  val wrongText = "Wrong ${lockName(type)}"
+
+  when (type) {
+    LOCK_PATTERN ->
+      Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+      ) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(12.dp))
+        Text(text = if (wrong) wrongText else " ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        Spacer(Modifier.height(20.dp))
+        PatternPad(
+          error = wrong,
+          modifier = Modifier.fillMaxWidth(0.8f),
+          onComplete = { seq -> wrong = seq.length < 4 || !onSubmit(seq) },
+        )
+        if (faceEnabled) {
+          Spacer(Modifier.height(16.dp))
+          TextButton(onClick = { promptFace(context, onFaceSuccess) }) { Text("Use face unlock") }
         }
+      }
+    LOCK_PASSWORD ->
+      Column(
+        modifier = Modifier.fillMaxSize().padding(vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Top),
+      ) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        PasswordEntry("Password", entry, { entry = it; wrong = false }) {
+          if (!onSubmit(entry)) {
+            wrong = true
+            entry = ""
+          }
+        }
+        Text(text = if (wrong) wrongText else " ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        TextButton(
+          onClick = {
+            if (!onSubmit(entry)) {
+              wrong = true
+              entry = ""
+            }
+          },
+          enabled = entry.isNotEmpty(),
+        ) { Text("Unlock") }
+        if (faceEnabled) {
+          TextButton(onClick = { promptFace(context, onFaceSuccess) }) { Text("Use face unlock") }
+        }
+      }
+    else ->
+      Column(modifier = Modifier.fillMaxSize()) {
         Column(
           modifier = Modifier.weight(1f).fillMaxWidth(),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center,
         ) {
-          Text(
-            when (step) {
-              0 -> "Enter current PIN"
-              1 -> "Enter new PIN"
-              else -> "Confirm new PIN"
-            },
-            style = MaterialTheme.typography.titleMedium,
-          )
+          Text(title, style = MaterialTheme.typography.titleMedium)
           Spacer(Modifier.height(36.dp))
-          PinDots(count = if (step == 0) maxOf(4, entry.length) else 4, filled = entry.length)
+          PinDots(count = maxOf(4, entry.length), filled = entry.length)
           Spacer(Modifier.height(24.dp))
-          Text(text = error ?: " ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-          if (step == 0) {
-            TextButton(
-              onClick = {
-                if (verify(entry)) {
-                  step = 1
-                  entry = ""
-                  error = null
-                } else {
-                  error = "Wrong PIN"
-                  entry = ""
-                }
-              },
-              enabled = entry.length >= 4,
-            ) { Text("Next") }
-          }
+          Text(
+            text = if (wrong) wrongText else " ",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+          )
+          TextButton(
+            onClick = {
+              if (!onSubmit(entry)) {
+                wrong = true
+                entry = ""
+              }
+            },
+            enabled = entry.length >= 4,
+          ) { Text("Unlock") }
         }
         PinKeypad(
           onDigit = { d ->
-            when (step) {
-              0 ->
-                if (entry.length < 8) {
-                  entry += d
-                  error = null
-                  if (entry.length >= 4 && verify(entry)) {
-                    step = 1
-                    entry = ""
-                  }
-                }
-              1 ->
-                if (entry.length < 4) {
-                  entry += d
-                  if (entry.length == 4) {
-                    first = entry
-                    entry = ""
-                    step = 2
-                  }
-                }
-              else ->
-                if (entry.length < 4) {
-                  entry += d
-                  if (entry.length == 4) {
-                    if (entry == first) {
-                      onNewPin(entry)
-                    } else {
-                      error = "The PINs don't match. Try again."
-                      first = ""
-                      entry = ""
-                      step = 1
-                    }
-                  }
-                }
+            if (entry.length < 8) {
+              entry += d
+              wrong = false
+              if (entry.length >= 4 && onSubmit(entry)) entry = ""
             }
           },
           onBackspace = { if (entry.isNotEmpty()) entry = entry.dropLast(1) },
+          leftSlot = {
+            if (faceEnabled) {
+              IconButton(onClick = { promptFace(context, onFaceSuccess) }) {
+                Icon(Icons.Filled.Face, contentDescription = "Use face unlock", modifier = Modifier.size(38.dp))
+              }
+            }
+          },
         )
+      }
+  }
+}
+
+@Composable
+private fun ChangeLockDialog(
+  currentType: String,
+  verify: (String) -> Boolean,
+  onDismiss: () -> Unit,
+  onNewLock: (type: String, secret: String) -> Unit,
+) {
+  var verified by remember { mutableStateOf(false) }
+  Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+      Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+          IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, contentDescription = "Close") }
+          Text("Change lock", style = MaterialTheme.typography.titleLarge)
+        }
+        if (!verified) {
+          UnlockContent(
+            type = currentType,
+            faceEnabled = false,
+            heading = "Enter current ${lockName(currentType)}",
+            onSubmit = { s ->
+              val ok = verify(s)
+              if (ok) verified = true
+              ok
+            },
+            onFaceSuccess = {},
+          )
+        } else {
+          SetLockContent(showFace = false, onCreate = { t, s, _ -> onNewLock(t, s) })
+        }
       }
     }
   }

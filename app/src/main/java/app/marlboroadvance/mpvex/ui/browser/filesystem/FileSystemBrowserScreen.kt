@@ -720,7 +720,6 @@ fun FileSystemBrowserScreen(path: String? = null) {
         if (isAtRoot && !isSearching && !isInSelectionMode) {
           app.marlboroadvance.mpvex.ui.browser.folderlist.LibraryChips(
             onMusicClick = { backstack.add(app.marlboroadvance.mpvex.ui.browser.music.MusicScreen) },
-            onPrivacyClick = { backstack.add(app.marlboroadvance.mpvex.ui.browser.privacy.PrivacyScreen) },
           )
         }
       Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
