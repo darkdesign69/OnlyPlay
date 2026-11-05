@@ -10,16 +10,47 @@ plugins {
   alias(libs.plugins.aboutlibraries)
 }
 
+// The app's version. For a release it is the tag you type into the "Make Release" workflow (read from
+// that run's inputs, or from -PappVersion=2.5.9). Any other build uses the newest git tag, so the app
+// info always shows your latest release instead of a number written here by hand.
+fun releaseTagFromWorkflow(): String? =
+  try {
+    val eventPath = System.getenv("GITHUB_EVENT_PATH")
+    if (eventPath == null || System.getenv("GITHUB_WORKFLOW") != "Make Release") {
+      null
+    } else {
+      Regex("\"tag\"\\s*:\\s*\"([^\"]+)\"").find(File(eventPath).readText())?.groupValues?.get(1)
+    }
+  } catch (e: Exception) {
+    null
+  }
+
+val givenVersion: String? = (project.findProperty("appVersion") as String?) ?: releaseTagFromWorkflow()
+val releaseVersionGiven: Boolean = givenVersion != null
+val appVersion: String =
+  (givenVersion ?: runCommand("git describe --tags --abbrev=0"))
+    ?.trim()
+    ?.removePrefix("v")
+    ?.takeIf { Regex("""\d+(\.\d+){0,2}([-+].*)?""").matches(it) }
+    ?: "1.3.1"
+val appVersionCode: Int =
+  appVersion
+    .substringBefore('-')
+    .substringBefore('+')
+    .split('.')
+    .mapNotNull { it.toIntOrNull() }
+    .let { p -> p.getOrElse(0) { 1 } * 10000 + p.getOrElse(1) { 0 } * 100 + p.getOrElse(2) { 0 } }
+
 android {
-  namespace = "app.marlboroadvance.mpvex"
+  namespace = "app.onlyplay"
   compileSdk = 37
 
   defaultConfig {
     applicationId = "app.marlboroadvance.mpvex"
     minSdk = 26
     targetSdk = 36
-    versionCode = 131
-    versionName = "1.3.1"
+    versionCode = appVersionCode
+    versionName = appVersion
 
     vectorDrawables {
       useSupportLibrary = true
@@ -104,7 +135,8 @@ android {
     named("debug") {
       signingConfig = signingConfigs.getByName("onlyplayDebug")
       applicationIdSuffix = ".debug"
-      versionNameSuffix = "-${getCommitCount()}"
+      // a release build shows exactly the version you typed; other builds add the commit count
+      versionNameSuffix = if (releaseVersionGiven) "" else "-${getCommitCount()}"
     }
   }
 
