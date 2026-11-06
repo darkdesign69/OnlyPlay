@@ -344,6 +344,9 @@ class PlayerActivity :
     setContentView(binding.root)
 
     privacyPlayback = isPrivacyIntent(intent)
+    if (privacyPlayback && browserPreferences.privacySecure.get()) {
+      window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+    }
     addContentView(
       androidx.compose.ui.platform.ComposeView(this).apply {
         setContent {

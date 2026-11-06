@@ -50,6 +50,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -101,7 +102,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -178,14 +181,62 @@ object PrivacyScreen : Screen {
       loading = false
     }
 
-    var durations by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
-    LaunchedEffect(hidden, sortKey) {
-      if (sortKey == 3) {
-        durations =
-          withContext(Dispatchers.IO) {
-            hidden.associate { v -> v.id to (durations[v.id] ?: readDurationMs(v.hiddenPath)) }
+    // Lock again when the app goes to the background or the screen turns off. Opening the player
+    // from this screen is not "leaving", so that is skipped.
+    var resumeTick by remember { mutableIntStateOf(0) }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+      val observer =
+        androidx.lifecycle.LifecycleEventObserver { _, event ->
+          when (event) {
+            androidx.lifecycle.Lifecycle.Event.ON_STOP -> if (!skipLockOnce) unlocked = false
+            androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+              skipLockOnce = false
+              resumeTick++
+            }
+            else -> {}
           }
-      }
+        }
+      lifecycleOwner.lifecycle.addObserver(observer)
+      onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Keep private videos out of the recent-apps preview and screenshots
+    val secureOn by preferences.privacySecure.collectAsState()
+    DisposableEffect(secureOn) {
+      val window = (context as? android.app.Activity)?.window
+      if (secureOn) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+      onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
+    }
+
+    var durations by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
+    LaunchedEffect(hidden) {
+      durations =
+        withContext(Dispatchers.IO) {
+          hidden.associate { v -> v.id to (durations[v.id] ?: readDurationMs(v.hiddenPath)) }
+        }
+    }
+
+    // Watched progress, same bar the main video list shows
+    val playbackRepo = koinInject<app.onlyplay.domain.playbackstate.repository.PlaybackStateRepository>()
+    var progress by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
+    LaunchedEffect(hidden, durations, resumeTick) {
+      progress =
+        withContext(Dispatchers.IO) {
+          val out = mutableMapOf<String, Float>()
+          hidden.forEach { v ->
+            val durSec = (durations[v.id] ?: 0L) / 1000
+            if (durSec > 0) {
+              val state = playbackRepo.getVideoDataByTitle(app.onlyplay.utils.media.MediaIdentifier.forLocalPath(v.hiddenPath))
+              if (state != null) {
+                val watched = (durSec - state.timeRemaining.toLong()).toFloat() / durSec.toFloat()
+                val p = watched.coerceIn(0f, 1f)
+                if (p in 0.01f..0.99f) out[v.id] = p
+              }
+            }
+          }
+          out
+        }
     }
 
     val sorted =
@@ -318,7 +369,8 @@ object PrivacyScreen : Screen {
                 HiddenVideoCard(
                   video = video,
                   selected = video.id in selectedIds,
-                  onClick = { if (selecting) toggle(video) else playHidden(context, video) },
+                  progress = progress[video.id],
+                  onClick = { if (selecting) toggle(video) else playHidden(context, video, sorted) },
                   onLongClick = { toggle(video) },
                 )
               }
@@ -329,7 +381,8 @@ object PrivacyScreen : Screen {
                 HiddenVideoRow(
                   video = video,
                   selected = video.id in selectedIds,
-                  onClick = { if (selecting) toggle(video) else playHidden(context, video) },
+                  progress = progress[video.id],
+                  onClick = { if (selecting) toggle(video) else playHidden(context, video, sorted) },
                   onLongClick = { toggle(video) },
                 )
               }
@@ -350,6 +403,8 @@ object PrivacyScreen : Screen {
         onColumns = { preferences.privacyColumns.set(it) },
         onSortKey = { preferences.privacySort.set(it) },
         onSortDesc = { preferences.privacyDesc.set(it) },
+        secureOn = secureOn,
+        onToggleSecure = { preferences.privacySecure.set(!secureOn) },
         onChangeLock = {
           menuOpen = false
           showChangePin = true
@@ -453,15 +508,24 @@ object PrivacyScreen : Screen {
   }
 }
 
+// Set just before the player opens so the list does not lock itself while the video is playing.
+private var skipLockOnce = false
+
 private fun playHidden(
   context: Context,
   video: HiddenVideo,
+  queue: List<HiddenVideo>,
 ) {
+  skipLockOnce = true
   val intent = Intent(Intent.ACTION_VIEW, Uri.fromFile(File(video.hiddenPath)))
   intent.setClass(context, PlayerActivity::class.java)
   intent.putExtra("internal_launch", true)
   intent.putExtra("privacy_video", true)
   intent.putExtra("title", video.name)
+  // Next and previous follow the order shown on screen, and stay inside the private videos
+  val uris = ArrayList<Uri>(queue.map { Uri.fromFile(File(it.hiddenPath)) })
+  intent.putParcelableArrayListExtra("playlist", uris)
+  intent.putExtra("playlist_index", queue.indexOfFirst { it.id == video.id }.coerceAtLeast(0))
   context.startActivity(intent)
 }
 
@@ -1051,6 +1115,7 @@ private fun rememberThumb(path: String): Bitmap? {
 private fun Thumb(
   path: String,
   modifier: Modifier,
+  progress: Float? = null,
 ) {
   val bmp = rememberThumb(path)
   Box(
@@ -1061,6 +1126,18 @@ private fun Thumb(
       Image(bitmap = bmp.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
     }
     Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+    if (progress != null) {
+      Box(
+        modifier =
+          Modifier
+            .align(Alignment.BottomStart)
+            .fillMaxWidth()
+            .height(4.dp)
+            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)),
+      ) {
+        Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(progress).background(MaterialTheme.colorScheme.primary))
+      }
+    }
   }
 }
 
@@ -1069,6 +1146,7 @@ private fun Thumb(
 private fun HiddenVideoRow(
   video: HiddenVideo,
   selected: Boolean,
+  progress: Float?,
   onClick: () -> Unit,
   onLongClick: () -> Unit,
 ) {
@@ -1084,7 +1162,7 @@ private fun HiddenVideoRow(
     horizontalArrangement = Arrangement.spacedBy(14.dp),
   ) {
     Box {
-      Thumb(video.hiddenPath, Modifier.width(112.dp).aspectRatio(16f / 9f))
+      Thumb(video.hiddenPath, Modifier.width(112.dp).aspectRatio(16f / 9f), progress)
       if (selected) SelectedMark(Modifier.align(Alignment.TopStart))
     }
     Column(modifier = Modifier.weight(1f)) {
@@ -1109,6 +1187,7 @@ private fun HiddenVideoRow(
 private fun HiddenVideoCard(
   video: HiddenVideo,
   selected: Boolean,
+  progress: Float?,
   onClick: () -> Unit,
   onLongClick: () -> Unit,
 ) {
@@ -1122,7 +1201,7 @@ private fun HiddenVideoCard(
         .combinedClickable(onClick = onClick, onLongClick = onLongClick),
   ) {
     Box {
-      Thumb(video.hiddenPath, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+      Thumb(video.hiddenPath, Modifier.fillMaxWidth().aspectRatio(16f / 9f), progress)
       if (selected) SelectedMark(Modifier.align(Alignment.TopStart))
     }
     Text(
@@ -1168,6 +1247,8 @@ private fun PrivacyOptionsDialog(
   sortDesc: Boolean,
   canFace: Boolean,
   faceOn: Boolean,
+  secureOn: Boolean,
+  onToggleSecure: () -> Unit,
   onGrid: (Boolean) -> Unit,
   onColumns: (Int) -> Unit,
   onSortKey: (Int) -> Unit,
@@ -1239,6 +1320,13 @@ private fun PrivacyOptionsDialog(
           modifier = Modifier.fillMaxWidth().clickable(onClick = onChangeLock).padding(vertical = 12.dp),
           verticalAlignment = Alignment.CenterVertically,
         ) { Text("Change lock", modifier = Modifier.weight(1f)) }
+        Row(
+          modifier = Modifier.fillMaxWidth().clickable(onClick = onToggleSecure).padding(vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Text("Hide in recent apps and block screenshots", modifier = Modifier.weight(1f))
+          Checkbox(checked = secureOn, onCheckedChange = null)
+        }
         if (canFace) {
           Row(
             modifier = Modifier.fillMaxWidth().clickable(onClick = onToggleFace).padding(vertical = 4.dp),

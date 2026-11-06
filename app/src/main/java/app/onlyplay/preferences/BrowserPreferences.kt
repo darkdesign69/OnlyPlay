@@ -27,6 +27,7 @@ class BrowserPreferences(
   val privacyFingerprint = preferenceStore.getBoolean("privacy_fingerprint", false)
   val privacyGrid = preferenceStore.getBoolean("privacy_grid", false)
   val privacyColumns = preferenceStore.getInt("privacy_columns", 2)
+  val privacySecure = preferenceStore.getBoolean("privacy_secure", true)
   val privacySort = preferenceStore.getInt("privacy_sort", 2)
   val privacyDesc = preferenceStore.getBoolean("privacy_desc", true)
 
