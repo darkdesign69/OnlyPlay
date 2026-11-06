@@ -195,6 +195,62 @@ object PrivacyStore {
       ok
     }
 
+  /** Result of restoring many videos at once. */
+  data class RestoreResult(
+    val restored: Int,
+    val toRecovered: Int,
+    val failed: Int,
+  )
+
+  /**
+   * Restores many hidden videos in one go. The list is read once and saved once, every video is
+   * tried, and a video whose original folder can't be written to (deleted, on a removed card, or
+   * another app's private folder such as a downloader's) goes to Movies/Recovered instead of failing.
+   */
+  suspend fun unhideMany(
+    context: Context,
+    videos: List<HiddenVideo>,
+  ): RestoreResult =
+    withContext(Dispatchers.IO) {
+      val index = load(context).toMutableList()
+      val recovered = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MOVIES), "Recovered")
+      val scanned = mutableListOf<String>()
+      var restored = 0
+      var toRecovered = 0
+      var failed = 0
+      for (v in videos) {
+        val src = File(v.hiddenPath)
+        if (!src.isFile) {
+          index.removeAll { it.id == v.id }
+          failed++
+          continue
+        }
+        val original = File(v.originalPath)
+        var done = false
+        val folders = listOf(original.parentFile, recovered)
+        for ((i, folder) in folders.withIndex()) {
+          if (folder == null) continue
+          if (!(folder.isDirectory || folder.mkdirs())) continue
+          val dest = if (i == 0 && !original.exists()) original else uniqueFile(folder, original.name)
+          if (moveFile(src, dest)) {
+            scanned.add(dest.absolutePath)
+            if (i == 1) toRecovered++
+            done = true
+            break
+          }
+        }
+        if (done) {
+          index.removeAll { it.id == v.id }
+          restored++
+        } else {
+          failed++
+        }
+      }
+      save(context, index)
+      rescan(context, scanned)
+      RestoreResult(restored, toRecovered, failed)
+    }
+
   /** Permanently deletes hidden videos. Returns how many were deleted. */
   suspend fun delete(
     context: Context,

@@ -46,7 +46,7 @@ android {
   compileSdk = 37
 
   defaultConfig {
-    applicationId = "app.marlboroadvance.mpvex"
+    applicationId = "app.onlyplay"
     minSdk = 26
     targetSdk = 36
     versionCode = appVersionCode
@@ -134,7 +134,6 @@ android {
 
     named("debug") {
       signingConfig = signingConfigs.getByName("onlyplayDebug")
-      applicationIdSuffix = ".debug"
       // a release build shows exactly the version you typed; other builds add the commit count
       versionNameSuffix = if (releaseVersionGiven) "" else "-${getCommitCount()}"
     }

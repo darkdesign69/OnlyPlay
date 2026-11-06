@@ -78,6 +78,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Title
@@ -294,13 +295,23 @@ object PrivacyScreen : Screen {
                   val chosen = hidden.filter { it.id in selectedIds }
                   selectedIds = emptySet()
                   scope.launch {
-                    var ok = 0
-                    chosen.forEach { if (PrivacyStore.unhide(context, it)) ok++ }
+                    val r = PrivacyStore.unhideMany(context, chosen)
                     hidden = withContext(Dispatchers.IO) { PrivacyStore.load(context) }
-                    Toast.makeText(context, "Restored $ok of ${chosen.size} video(s) to their folders", Toast.LENGTH_SHORT).show()
+                    val msg =
+                      buildString {
+                        append("Restored ${r.restored} of ${chosen.size} video(s)")
+                        if (r.toRecovered > 0) append(". ${r.toRecovered} went to Movies/Recovered because their old folder couldn't be used")
+                        if (r.failed > 0) append(". ${r.failed} couldn't be moved (check free space)")
+                      }
+                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                   }
                 },
               ) { Icon(Icons.Filled.LockOpen, contentDescription = "Unlock") }
+              IconButton(
+                onClick = {
+                  selectedIds = if (selectedIds.size == sorted.size) emptySet() else sorted.map { it.id }.toSet()
+                },
+              ) { Icon(Icons.Filled.SelectAll, contentDescription = "Select all") }
               if (selectedIds.size == 1) {
                 IconButton(onClick = { renameTarget = hidden.firstOrNull { it.id in selectedIds } }) {
                   Icon(Icons.Filled.Edit, contentDescription = "Rename")

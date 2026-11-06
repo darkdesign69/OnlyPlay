@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<onlyPlaySettings exportDate="2026-11-06 16:27:27">
+  <preferences>
+    <preference key="audio_volume_boost_cap" type="int" value="200" />
+    <preference key="folder_view_mode" type="string" value="AlbumView" />
+    <preference key="slider_custom_volume_bottom_color" type="int" value="-1" />
+    <preference key="sub_scale_by_window" type="boolean" value="false" />
+    <preference key="custom_background_dim" type="float" value="0.61712873" />
+    <preference key="default_custom_aspect_ratio" type="string" value="-1.0" />
+    <preference key="slider_custom_volume_color" type="int" value="-1" />
+    <preference key="decoder_mode" type="string" value="sw" />
+    <preference key="unlimited_name_lines" type="boolean" value="false" />
+    <preference key="show_system_navigation_bar" type="boolean" value="true" />
+    <preference key="privacy_desc" type="boolean" value="true" />
+    <preference key="default_video_aspect" type="string" value="Fit" />
+    <preference key="privacy_columns" type="int" value="3" />
+    <preference key="folder_grid_columns_portrait" type="int" value="4" />
+    <preference key="privacy_lock_type" type="string" value="pin" />
+    <preference key="dark_mode" type="string" value="Dark" />
+    <preference key="slider_color_scheme" type="string" value="Custom" />
+    <preference key="slider_custom_brightness_bottom_color" type="int" value="-1" />
+    <preference key="double_tap_to_seek_duration" type="int" value="25" />
+    <preference key="unplayed_old_video_days" type="int" value="1" />
+    <preference key="show_hidden_files" type="boolean" value="false" />
+    <preference key="custom_accent" type="int" value="-14575885" />
+    <preference key="player_orientation" type="string" value="Portrait" />
+    <preference key="show_system_status_bar" type="boolean" value="true" />
+    <preference key="amoled_mode" type="boolean" value="true" />
+    <preference key="privacy_grid" type="boolean" value="true" />
+    <preference key="custom_background" type="string" value="wall:7" />
+    <preference key="slider_custom_brightness_color" type="int" value="-1" />
+    <preference key="sub_autoload_enabled" type="boolean" value="false" />
+    <preference key="app_theme" type="string" value="Monochrome" />
+    <preference key="video_grid_columns_portrait" type="int" value="3" />
+    <preference key="custom_background_blur" type="float" value="0.9497219" />
+    <preference key="custom_background_transparency" type="float" value="0.5012892" />
+    <preference key="privacy_sort" type="int" value="2" />
+    <preference key="mpv_profile" type="string" value="sw-fast" />
+    <preference key="keep_system_bars_visible" type="boolean" value="true" />
+    <preference key="media_layout_mode" type="string" value="GRID" />
+  </preferences>
+  <database>
+    <networkConnections />
+  </database>
+</onlyPlaySettings>

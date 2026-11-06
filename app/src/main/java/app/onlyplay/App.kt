@@ -26,6 +26,9 @@ class App : Application() {
   override fun onCreate() {
     super.onCreate()
 
+    // First launch of a fresh install: apply the bundled default settings
+    app.onlyplay.preferences.DefaultSettings.applyOnce(this)
+
     // Initialize Koin
     startKoin {
       androidContext(this@App)
