@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,46 @@ import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SwitchPreference
 import org.koin.compose.koinInject
+
+enum class DecoderModeOption(val value: String, val label: String, val hint: String) {
+  Auto("auto", "Auto (mpvKt style)", "Lets mpv pick the best hardware decoder for each video. Best for most videos."),
+  Hw("hw", "HW (fastest)", "Hardware only, no copying. Fastest, but some videos flicker or show black."),
+  HwCopy("hwcopy", "HW+ (compatible)", "Hardware decoding with a copy step. Fixes flicker on many phones."),
+  Sw("sw", "SW (software)", "Always software. Most compatible, but heavier on the battery and CPU."),
+  ;
+
+  override fun toString() = label
+
+  companion object {
+    fun fromValue(v: String) = entries.firstOrNull { it.value == v } ?: Auto
+  }
+}
+
+enum class SkipLoopOption(val value: String, val label: String, val hint: String) {
+  Default("default", "Default", "Normal quality."),
+  NonRef("nonref", "Skip non-reference frames", "Lighter on the CPU for heavy 1080p and 4K software playback."),
+  All("all", "Skip all", "Lightest on the CPU, but the picture looks blockier."),
+  ;
+
+  override fun toString() = label
+
+  companion object {
+    fun fromValue(v: String) = entries.firstOrNull { it.value == v } ?: Default
+  }
+}
+
+enum class FrameDropOption(val value: String, val label: String, val hint: String) {
+  Default("default", "Default", "Drops frames only when the player thinks it has to."),
+  Vo("vo", "Drop at display", "Keeps video in sync with audio when the screen can't keep up."),
+  Both("decoder+vo", "Drop at decoder and display", "Best for slow phones. Keeps sound in sync, may skip frames."),
+  ;
+
+  override fun toString() = label
+
+  companion object {
+    fun fromValue(v: String) = entries.firstOrNull { it.value == v } ?: Default
+  }
+}
 
 @Serializable
 object DecoderPreferencesScreen : Screen {
@@ -120,6 +161,79 @@ object DecoderPreferencesScreen : Screen {
                   preferences.tryHWDecoding.set(it)
                 },
                 title = { Text(stringResource(R.string.pref_decoder_try_hw_dec_title)) },
+              )
+
+              PreferenceDivider()
+
+              val decoderMode by preferences.decoderMode.collectAsState()
+              val currentMode = DecoderModeOption.fromValue(decoderMode)
+              ListPreference(
+                value = currentMode,
+                onValueChange = { preferences.decoderMode.set(it.value) },
+                values = DecoderModeOption.entries,
+                title = { Text("Decoder mode") },
+                summary = { Text(currentMode.hint, color = MaterialTheme.colorScheme.outline) },
+              )
+
+              PreferenceDivider()
+
+              val cpuThreads by preferences.cpuThreads.collectAsState()
+              ListPreference(
+                value = cpuThreads,
+                onValueChange = { preferences.cpuThreads.set(it) },
+                values = listOf(0, 1, 2, 3, 4, 6, 8),
+                valueToText = { AnnotatedString(if (it == 0) "Auto" else "$it cores") },
+                title = { Text("CPU core limit") },
+                summary = {
+                  Text(
+                    "Cores used by the software decoder. Auto is best for most phones.",
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              val skipLoop by preferences.skipLoopFilter.collectAsState()
+              val currentSkip = SkipLoopOption.fromValue(skipLoop)
+              ListPreference(
+                value = currentSkip,
+                onValueChange = { preferences.skipLoopFilter.set(it.value) },
+                values = SkipLoopOption.entries,
+                title = { Text("Skip loop filter") },
+                summary = {
+                  Text(
+                    currentSkip.hint,
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              val fastDecode by preferences.fastDecode.collectAsState()
+              SwitchPreference(
+                value = fastDecode,
+                onValueChange = { preferences.fastDecode.set(it) },
+                title = { Text("Use speedup tricks") },
+                summary = {
+                  Text(
+                    "Faster software decoding with a small drop in quality.",
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              val frameDrop by preferences.frameDrop.collectAsState()
+              val currentDrop = FrameDropOption.fromValue(frameDrop)
+              ListPreference(
+                value = currentDrop,
+                onValueChange = { preferences.frameDrop.set(it.value) },
+                values = FrameDropOption.entries,
+                title = { Text("Drop frames when slow") },
+                summary = { Text(currentDrop.hint, color = MaterialTheme.colorScheme.outline) },
               )
 
               PreferenceDivider()

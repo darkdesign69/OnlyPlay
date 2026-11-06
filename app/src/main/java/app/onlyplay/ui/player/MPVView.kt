@@ -109,7 +109,27 @@ class MPVView(
       "hwdec",
       if (decoderPreferences.tryHWDecoding.get()) "mediacodec,mediacodec-copy,no" else "no",
     )
-    MPVLib.setOptionString("hwdec-codecs", "all")
+    if (decoderPreferences.tryHWDecoding.get()) {
+      val hwdecList =
+        when (decoderPreferences.decoderMode.get()) {
+          "hw" -> "mediacodec,no"
+          "hwcopy" -> "mediacodec-copy,no"
+          "sw" -> "no"
+          // Same as mpvKt: let mpv pick the best hardware decoder for each video
+          else -> "auto"
+        }
+      MPVLib.setOptionString("hwdec", hwdecList)
+    }
+    // hwdec-codecs is left at mpv's default list: forcing "all" pushes old codecs (xvid, wmv, mpeg4)
+    // through MediaCodec, which is a common cause of flicker and slow playback.
+
+    val cpuThreads = decoderPreferences.cpuThreads.get()
+    if (cpuThreads > 0) MPVLib.setOptionString("vd-lavc-threads", cpuThreads.toString())
+    val skipLoop = decoderPreferences.skipLoopFilter.get()
+    if (skipLoop != "default") MPVLib.setOptionString("vd-lavc-skiploopfilter", skipLoop)
+    if (decoderPreferences.fastDecode.get()) MPVLib.setOptionString("vd-lavc-fast", "yes")
+    val frameDrop = decoderPreferences.frameDrop.get()
+    if (frameDrop != "default") MPVLib.setOptionString("framedrop", frameDrop)
 
     if (decoderPreferences.useYUV420P.get()) {
       MPVLib.setOptionString("vf", "format=yuv420p")

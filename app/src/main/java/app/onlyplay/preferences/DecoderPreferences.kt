@@ -13,6 +13,13 @@ class DecoderPreferences(
   val useVulkan = preferenceStore.getBoolean("use_vulkan", false)
   val useYUV420P = preferenceStore.getBoolean("use_yuv420p", false)
 
+  // Extra decoder controls for smooth playback: "auto", "hw", "hwcopy" or "sw"
+  val decoderMode = preferenceStore.getString("decoder_mode", "auto")
+  val cpuThreads = preferenceStore.getInt("decoder_cpu_threads", 0)
+  val skipLoopFilter = preferenceStore.getString("decoder_skip_loop_filter", "default")
+  val fastDecode = preferenceStore.getBoolean("decoder_fast_decode", false)
+  val frameDrop = preferenceStore.getString("decoder_frame_drop", "default")
+
   val debanding = preferenceStore.getEnum("debanding", Debanding.None)
   val debandIterations = preferenceStore.getInt("deband_iterations", 1)
   val debandThreshold = preferenceStore.getInt("deband_threshold", 48)
