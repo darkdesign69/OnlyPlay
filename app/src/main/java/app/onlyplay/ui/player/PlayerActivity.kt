@@ -326,11 +326,39 @@ class PlayerActivity :
       }
     }
 
+  // Hidden (Privacy) videos lock again whenever the app is left or the screen turns off.
+  private var privacyPlayback = false
+  private val privacyLocked = androidx.compose.runtime.mutableStateOf(false)
+
+  private fun isPrivacyIntent(i: Intent): Boolean {
+    if (browserPreferences.privacyPinHash.get().isEmpty()) return false
+    if (i.getBooleanExtra("privacy_video", false)) return true
+    val path = i.data?.path ?: return false
+    return path.startsWith(app.onlyplay.ui.browser.privacy.PrivacyStore.privateDir(this).absolutePath)
+  }
+
   @RequiresApi(Build.VERSION_CODES.P)
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
     setContentView(binding.root)
+
+    privacyPlayback = isPrivacyIntent(intent)
+    addContentView(
+      androidx.compose.ui.platform.ComposeView(this).apply {
+        setContent {
+          OnlyPlayTheme {
+            if (privacyLocked.value) {
+              app.onlyplay.ui.browser.privacy.PrivacyUnlockOverlay(onUnlocked = { privacyLocked.value = false })
+            }
+          }
+        }
+      },
+      android.view.ViewGroup.LayoutParams(
+        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+      ),
+    )
 
     // OPTIMIZATION: Set volume control stream so hardware buttons control media volume
     volumeControlStream = AudioManager.STREAM_MUSIC
@@ -672,6 +700,7 @@ class PlayerActivity :
   override fun onPause() {
     runCatching {
       val isInPip = isInPictureInPictureMode
+      if (privacyPlayback && !isInPip && !isFinishing) viewModel.pause()
       val shouldPause = (!audioPreferences.automaticBackgroundPlayback.get() && !isManualBackgroundPlayback) || 
                         (isUserFinishing && !isManualBackgroundPlayback)
 
@@ -744,6 +773,10 @@ class PlayerActivity :
 
   override fun onStop() {
     runCatching {
+      if (privacyPlayback && !isFinishing && !isInPictureInPictureMode) {
+        viewModel.pause()
+        privacyLocked.value = true
+      }
       pipHelper.onStop()
       saveVideoPlaybackState(fileName)
 
@@ -2341,6 +2374,8 @@ class PlayerActivity :
 
     // Update the intent first so getFileName uses the new intent data
     setIntent(intent)
+    privacyPlayback = isPrivacyIntent(intent)
+    privacyLocked.value = false
 
     // Check if this intent has playlist information
     val hasPlaylistExtras = intent.hasExtra("playlist_id") ||

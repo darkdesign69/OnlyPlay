@@ -76,6 +76,9 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
@@ -175,12 +178,25 @@ object PrivacyScreen : Screen {
       loading = false
     }
 
+    var durations by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
+    LaunchedEffect(hidden, sortKey) {
+      if (sortKey == 3) {
+        durations =
+          withContext(Dispatchers.IO) {
+            hidden.associate { v -> v.id to (durations[v.id] ?: readDurationMs(v.hiddenPath)) }
+          }
+      }
+    }
+
     val sorted =
-      remember(hidden, sortKey, sortDesc) {
+      remember(hidden, sortKey, sortDesc, durations) {
         val base =
           when (sortKey) {
             0 -> hidden.sortedBy { it.name.lowercase() }
             1 -> hidden.sortedBy { it.size }
+            3 -> hidden.sortedBy { durations[it.id] ?: 0L }
+            4 -> hidden.sortedBy { (File(it.originalPath).parent ?: "").lowercase() }
+            5 -> hidden.sortedBy { it.name.substringAfterLast('.', "").lowercase() }
             else -> hidden.sortedBy { File(it.hiddenPath).lastModified() }
           }
         if (sortDesc) base.reversed() else base
@@ -444,8 +460,56 @@ private fun playHidden(
   val intent = Intent(Intent.ACTION_VIEW, Uri.fromFile(File(video.hiddenPath)))
   intent.setClass(context, PlayerActivity::class.java)
   intent.putExtra("internal_launch", true)
+  intent.putExtra("privacy_video", true)
   intent.putExtra("title", video.name)
   context.startActivity(intent)
+}
+
+private fun readDurationMs(path: String): Long =
+  runCatching {
+    val r = MediaMetadataRetriever()
+    try {
+      r.setDataSource(path)
+      r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+    } finally {
+      r.release()
+    }
+  }.getOrDefault(0L)
+
+/**
+ * Full-screen lock shown over a hidden video in the player after the app was left or the screen was
+ * turned off. The video stays paused underneath until the lock is opened again.
+ */
+@Composable
+fun PrivacyUnlockOverlay(onUnlocked: () -> Unit) {
+  val context = LocalContext.current
+  val preferences = koinInject<BrowserPreferences>()
+  val lockType by preferences.privacyLockType.collectAsState()
+  val faceOn by preferences.privacyFingerprint.collectAsState()
+  val canFace = remember { FaceLock.available(context) }
+  var faceScan by remember { mutableStateOf(false) }
+  Surface(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+      UnlockContent(
+        type = lockType,
+        faceEnabled = faceOn && canFace,
+        heading = "Private video locked",
+        onSubmit = { secret ->
+          val ok = hashPrivacyPin(preferences.privacyPinSalt.get(), secret) == preferences.privacyPinHash.get()
+          if (ok) onUnlocked()
+          ok
+        },
+        onFaceRequest = { faceScan = true },
+        faceActive = faceScan,
+        faceFallback = "Use ${lockName(lockType)} instead",
+        onFaceDone = {
+          faceScan = false
+          onUnlocked()
+        },
+        onFaceClose = { faceScan = false },
+      )
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1147,19 +1211,24 @@ private fun PrivacyOptionsDialog(
           OptionTile(Icons.Filled.CalendarToday, "Date", sortKey == 2, { onSortKey(2) })
           OptionTile(Icons.Filled.SwapVert, "Size", sortKey == 1, { onSortKey(1) })
         }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+          OptionTile(Icons.Filled.Schedule, "Length", sortKey == 3, { onSortKey(3) })
+          OptionTile(Icons.Filled.Folder, "Folder", sortKey == 4, { onSortKey(4) })
+          OptionTile(Icons.Filled.Category, "Type", sortKey == 5, { onSortKey(5) })
+        }
         Spacer(Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           FilterChip(
             selected = !sortDesc,
             onClick = { onSortDesc(false) },
-            label = { Text("A-Z / Oldest") },
+            label = { Text("A-Z", maxLines = 1) },
             leadingIcon = { Icon(Icons.Filled.ArrowUpward, contentDescription = null, modifier = Modifier.size(18.dp)) },
             modifier = Modifier.weight(1f),
           )
           FilterChip(
             selected = sortDesc,
             onClick = { onSortDesc(true) },
-            label = { Text("Z-A / Newest") },
+            label = { Text("Z-A", maxLines = 1) },
             leadingIcon = { Icon(Icons.Filled.ArrowDownward, contentDescription = null, modifier = Modifier.size(18.dp)) },
             modifier = Modifier.weight(1f),
           )
