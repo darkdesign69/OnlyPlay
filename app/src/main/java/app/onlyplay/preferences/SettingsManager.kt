@@ -44,6 +44,9 @@ class SettingsManager(
     private const val TYPE_BOOLEAN = "boolean"
     private const val TYPE_STRING_SET = "stringSet"
     private const val STRING_SET_SEPARATOR = "|||"
+
+    const val STORE_SEPARATOR = "::"
+    val MUSIC_STORES = listOf("retro_music_settings", "onlyplay_fx")
   }
 
 
@@ -96,6 +99,18 @@ class SettingsManager(
         writePreference(serializer, key, value)
         exportedCount++
         exportedKeys.add("pref:$key")
+      }
+    }
+    // Music player settings (theme, equalizer and so on) live in their own stores. They are saved
+    // under keys like "retro_music_settings::theme".
+    for (store in MUSIC_STORES) {
+      val all = context.getSharedPreferences(store, Context.MODE_PRIVATE).all
+      for ((key, value) in all) {
+        if (value != null) {
+          writePreference(serializer, "$store$STORE_SEPARATOR$key", value)
+          exportedCount++
+          exportedKeys.add("pref:$store$STORE_SEPARATOR$key")
+        }
       }
     }
     serializer.endTag(null, TAG_PREFERENCES)
@@ -244,13 +259,21 @@ class SettingsManager(
 
 
   private fun readPreference(parser: XmlPullParser) {
-    val key = parser.getAttributeValue(null, ATTR_KEY) ?: return
+    val fullKey = parser.getAttributeValue(null, ATTR_KEY) ?: return
     val type = parser.getAttributeValue(null, ATTR_TYPE) ?: return
     val valueStr = parser.getAttributeValue(null, ATTR_VALUE) ?: return
 
+    // Keys written as "store::key" belong to one of the music settings stores
+    val store = fullKey.substringBefore(STORE_SEPARATOR, "")
+    val key = if (store.isNotEmpty() && store in MUSIC_STORES) fullKey.substringAfter(STORE_SEPARATOR) else fullKey
+
     // Get the SharedPreferences editor from the Android context
     val sharedPrefs =
-      androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+      if (store.isNotEmpty() && store in MUSIC_STORES) {
+        context.getSharedPreferences(store, Context.MODE_PRIVATE)
+      } else {
+        androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+      }
     val editor = sharedPrefs.edit()
 
     when (type) {

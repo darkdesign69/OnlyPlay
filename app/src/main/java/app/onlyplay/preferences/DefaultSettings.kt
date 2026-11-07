@@ -20,6 +20,7 @@ object DefaultSettings {
         return
       }
       val editor = prefs.edit()
+      val storeEditors = mutableMapOf<String, android.content.SharedPreferences.Editor>()
       context.assets.open("default_settings.xml").use { input ->
         val parser = Xml.newPullParser()
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
@@ -27,22 +28,33 @@ object DefaultSettings {
         var event = parser.eventType
         while (event != XmlPullParser.END_DOCUMENT) {
           if (event == XmlPullParser.START_TAG && parser.name == "preference") {
-            val key = parser.getAttributeValue(null, "key")
+            val fullKey = parser.getAttributeValue(null, "key")
             val type = parser.getAttributeValue(null, "type")
             val value = parser.getAttributeValue(null, "value")
-            if (key != null && type != null && value != null) {
+            if (fullKey != null && type != null && value != null) {
+              // "store::key" entries are music settings and go to their own store
+              val store = fullKey.substringBefore(SettingsManager.STORE_SEPARATOR, "")
+              val isMusic = store in SettingsManager.MUSIC_STORES
+              val key = if (isMusic) fullKey.substringAfter(SettingsManager.STORE_SEPARATOR) else fullKey
+              val e =
+                if (isMusic) {
+                  storeEditors.getOrPut(store) { context.getSharedPreferences(store, Context.MODE_PRIVATE).edit() }
+                } else {
+                  editor
+                }
               when (type) {
-                "string" -> editor.putString(key, value)
-                "int" -> value.toIntOrNull()?.let { editor.putInt(key, it) }
-                "long" -> value.toLongOrNull()?.let { editor.putLong(key, it) }
-                "float" -> value.toFloatOrNull()?.let { editor.putFloat(key, it) }
-                "boolean" -> editor.putBoolean(key, value.toBoolean())
+                "string" -> e.putString(key, value)
+                "int" -> value.toIntOrNull()?.let { e.putInt(key, it) }
+                "long" -> value.toLongOrNull()?.let { e.putLong(key, it) }
+                "float" -> value.toFloatOrNull()?.let { e.putFloat(key, it) }
+                "boolean" -> e.putBoolean(key, value.toBoolean())
               }
             }
           }
           event = parser.next()
         }
       }
+      storeEditors.values.forEach { it.commit() }
       editor.putBoolean(DONE_KEY, true)
       editor.commit()
     } catch (e: Exception) {
