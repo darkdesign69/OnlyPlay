@@ -347,8 +347,14 @@ fun GestureHandler(
           var lastVolumeValue = currentVolume
           var lastMPVVolumeValue = currentMPVVolume ?: 100
           var lastBrightnessValue = currentBrightness
-          // A swipe of about 25% of the screen height covers the whole volume / brightness range
-          val gestureRangePx = (size.height * 0.25f).coerceAtLeast(300f)
+          // A swipe of about 45% of the screen height covers the whole volume / brightness range, so a
+          // small slip of the finger only changes the level a little
+          val gestureRangePx = (size.height * 0.45f).coerceAtLeast(400f)
+          // The finger has to travel this far before a swipe counts, so taps and tiny slips are ignored
+          val swipeStartPx = 18.dp.toPx()
+          // Which half of the screen the swipe started on decides volume or brightness for the whole
+          // swipe, so drifting across the middle can no longer change the other one
+          val startedOnLeft = startPosition.x < size.width / 2f
           val brightnessGestureSens = 1f / gestureRangePx
           val volumeLevelPerPx = viewModel.volumeScaleTop() / gestureRangePx
           var volumeStartLevel = 0f
@@ -413,7 +419,7 @@ fun GestureHandler(
                   val deltaY = currentPosition.y - startPosition.y
 
                   // Determine gesture type based on initial drag direction
-                  if (gestureType == null && (abs(deltaX) > 20f || abs(deltaY) > 20f)) {
+                  if (gestureType == null && (abs(deltaX) > swipeStartPx || abs(deltaY) > swipeStartPx)) {
                     // Cancel long press if drag started
                     longPressJob.cancel()
 
@@ -423,7 +429,7 @@ fun GestureHandler(
                     } else {
                       gestureType = if (abs(deltaX) > abs(deltaY) * 1.5f) {
                         "horizontal"
-                      } else if (abs(deltaY) > abs(deltaX) * 1.5f) {
+                      } else if (abs(deltaY) > abs(deltaX) * 2f) {
                         "vertical"
                       } else {
                         null
@@ -525,9 +531,9 @@ fun GestureHandler(
                         when {
                           volumeGesture && brightnessGesture -> {
                             if (swapVolumeAndBrightness) {
-                              if (currentPosition.x > size.width / 2) changeBrightness() else changeVolume()
+                              if (!startedOnLeft) changeBrightness() else changeVolume()
                             } else {
-                              if (currentPosition.x < size.width / 2) changeBrightness() else changeVolume()
+                              if (startedOnLeft) changeBrightness() else changeVolume()
                             }
                           }
                           brightnessGesture -> changeBrightness()

@@ -133,6 +133,9 @@ android {
     }
 
     named("debug") {
+      // Shipped builds come from the debug type. A debuggable app runs much slower on the phone (the
+      // system skips its speed-ups), so switch that off; signing and everything else stay the same.
+      isDebuggable = false
       signingConfig = signingConfigs.getByName("onlyplayDebug")
       // a release build shows exactly the version you typed; other builds add the commit count
       versionNameSuffix = if (releaseVersionGiven) "" else "-${getCommitCount()}"

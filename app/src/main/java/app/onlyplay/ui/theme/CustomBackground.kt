@@ -16,13 +16,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -196,7 +196,13 @@ fun rememberBackgroundBitmap(
       if (mode == CUSTOM_BG_IMAGE) {
         withContext(Dispatchers.IO) {
           try {
-            BitmapFactory.decodeFile(backgroundImageFile(context).absolutePath)?.asImageBitmap()
+            val path = backgroundImageFile(context).absolutePath
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(path, bounds)
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 1800) sample *= 2
+            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+            BitmapFactory.decodeFile(path, opts)?.asImageBitmap()
           } catch (e: Throwable) {
             null
           }
@@ -206,7 +212,12 @@ fun rememberBackgroundBitmap(
         if (wall != null) {
           withContext(Dispatchers.IO) {
             try {
-              BitmapFactory.decodeResource(context.resources, wall.full)?.asImageBitmap()
+              val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+              BitmapFactory.decodeResource(context.resources, wall.full, bounds)
+              var sample = 1
+              while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 1800) sample *= 2
+              val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+              BitmapFactory.decodeResource(context.resources, wall.full, opts)?.asImageBitmap()
             } catch (e: Throwable) {
               null
             }
@@ -233,15 +244,35 @@ fun CustomBackgroundLayer(
   val savedDim by dimPrefs.customBackgroundDim.collectAsState()
   val dimAmount = dim ?: savedDim
   val preset = backgroundPresetFor(mode)
-  val image = rememberBackgroundBitmap(mode, version)
+  val sharp = rememberBackgroundBitmap(mode, version)
+  // Blur once, when the picture is prepared, instead of blurring a full-screen layer all the time
+  val blurStep = (blur * 20f).toInt().coerceIn(0, 20)
+  val image by produceState<ImageBitmap?>(initialValue = sharp, sharp, blurStep) {
+    val src = sharp
+    value =
+      if (src == null || blurStep == 0) {
+        src
+      } else {
+        withContext(Dispatchers.Default) {
+          try {
+            val bmp = src.asAndroidBitmap()
+            val div = 1f + blurStep * 1.2f
+            val w = (bmp.width / div).toInt().coerceAtLeast(24)
+            val h = (bmp.height / div).toInt().coerceAtLeast(24)
+            Bitmap.createScaledBitmap(bmp, w, h, true).asImageBitmap()
+          } catch (e: Throwable) {
+            src
+          }
+        }
+      }
+  }
 
   Box(modifier = modifier) {
     if (preset != null) {
       Box(modifier = Modifier.fillMaxSize().background(preset.brush()))
     } else if (image != null) {
-      val blurModifier = if (blur > 0.01f) Modifier.blur((blur * 24f).dp) else Modifier
       Image(
-        bitmap = image,
+        bitmap = image!!,
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier =
@@ -250,7 +281,7 @@ fun CustomBackgroundLayer(
             .graphicsLayer {
               scaleX = 1.1f
               scaleY = 1.1f
-            }.then(blurModifier),
+            },
       )
     }
     // Dark overlay: 0 = the picture as it is, 1 = almost black

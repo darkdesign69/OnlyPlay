@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.onlyplay.R
 import app.onlyplay.preferences.PlayerPreferences
 import app.onlyplay.preferences.preference.collectAsState
@@ -170,23 +171,28 @@ private fun PillSlider(
     animationSpec = tween(durationMillis = 80),
     label = "pillsliderfill",
   )
+  // Small MX-Player-sized panel: a number, a thin bar and a small icon on a soft dark background
   Column(
-    modifier = modifier,
+    modifier =
+      modifier
+        .clip(RoundedCornerShape(18.dp))
+        .background(Color.Black.copy(alpha = 0.35f))
+        .padding(horizontal = 11.dp, vertical = 10.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(10.dp),
+    verticalArrangement = Arrangement.spacedBy(6.dp),
   ) {
     Text(
       text = label,
       color = Color.White,
-      style = MaterialTheme.typography.labelLarge,
+      fontSize = 13.sp,
       textAlign = TextAlign.Center,
     )
     Box(
       modifier =
         Modifier
-          .width(26.dp)
-          .height(190.dp)
-          .clip(RoundedCornerShape(13.dp))
+          .width(8.dp)
+          .height(96.dp)
+          .clip(RoundedCornerShape(4.dp))
           .background(Color.White.copy(alpha = 0.22f)),
     ) {
       Box(
@@ -209,7 +215,7 @@ private fun PillSlider(
       painter = painterResource(iconRes),
       contentDescription = null,
       tint = Color.White,
-      modifier = Modifier.size(28.dp),
+      modifier = Modifier.size(20.dp),
     )
   }
 }

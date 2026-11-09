@@ -1,30 +1,35 @@
-<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<onlyPlaySettings exportDate="2026-11-06 16:27:27">
+<?xml version='1.0' encoding='UTF-8'?>
+<onlyPlaySettings>
   <preferences>
-    <preference key="audio_volume_boost_cap" type="int" value="200" />
+    <preference key="audio_volume_boost_cap" type="int" value="100" />
     <preference key="folder_view_mode" type="string" value="AlbumView" />
     <preference key="slider_custom_volume_bottom_color" type="int" value="-1" />
     <preference key="sub_scale_by_window" type="boolean" value="false" />
     <preference key="custom_background_dim" type="float" value="0.61712873" />
     <preference key="default_custom_aspect_ratio" type="string" value="-1.0" />
+    <preference key="enabled_stats_page" type="int" value="0" />
     <preference key="slider_custom_volume_color" type="int" value="-1" />
-    <preference key="decoder_mode" type="string" value="sw" />
+    <preference key="decoder_mode" type="string" value="auto" />
     <preference key="unlimited_name_lines" type="boolean" value="false" />
     <preference key="show_system_navigation_bar" type="boolean" value="true" />
     <preference key="privacy_desc" type="boolean" value="true" />
+    <preference key="hide_player_buttons_background" type="boolean" value="true" />
     <preference key="default_video_aspect" type="string" value="Fit" />
     <preference key="privacy_columns" type="int" value="3" />
     <preference key="folder_grid_columns_portrait" type="int" value="4" />
-    <preference key="privacy_lock_type" type="string" value="pin" />
     <preference key="dark_mode" type="string" value="Dark" />
     <preference key="slider_color_scheme" type="string" value="Custom" />
     <preference key="slider_custom_brightness_bottom_color" type="int" value="-1" />
+    <preference key="video_sort_order" type="string" value="Descending" />
     <preference key="double_tap_to_seek_duration" type="int" value="25" />
+    <preference key="horizontal_swipe_sensitivity" type="float" value="0.02" />
     <preference key="unplayed_old_video_days" type="int" value="1" />
     <preference key="show_hidden_files" type="boolean" value="false" />
     <preference key="custom_accent" type="int" value="-14575885" />
+    <preference key="seekbar_style" type="string" value="Standard" />
     <preference key="player_orientation" type="string" value="Portrait" />
     <preference key="show_system_status_bar" type="boolean" value="true" />
+    <preference key="video_sort_type" type="string" value="Date" />
     <preference key="amoled_mode" type="boolean" value="true" />
     <preference key="privacy_grid" type="boolean" value="true" />
     <preference key="custom_background" type="string" value="wall:7" />
@@ -35,11 +40,67 @@
     <preference key="custom_background_blur" type="float" value="0.9497219" />
     <preference key="custom_background_transparency" type="float" value="0.5012892" />
     <preference key="privacy_sort" type="int" value="2" />
-    <preference key="mpv_profile" type="string" value="sw-fast" />
+    <preference key="mpv_profile" type="string" value="fast" />
     <preference key="keep_system_bars_visible" type="boolean" value="true" />
     <preference key="media_layout_mode" type="string" value="GRID" />
+    <preference key="retro_music_settings::minDurationSec" type="int" value="10" />
+    <preference key="retro_music_settings::multiArtists" type="boolean" value="false" />
+    <preference key="retro_music_settings::themeMode" type="int" value="0" />
+    <preference key="retro_music_settings::miniControls" type="int" value="2" />
+    <preference key="retro_music_settings::remainingTime" type="boolean" value="false" />
+    <preference key="retro_music_settings::customFontPath" type="string" value="" />
+    <preference key="retro_music_settings::blurAmount" type="int" value="50" />
+    <preference key="retro_music_settings::fontChoice" type="int" value="2" />
+    <preference key="retro_music_settings::duck" type="boolean" value="true" />
+    <preference key="retro_music_settings::lockArt" type="boolean" value="true" />
+    <preference key="retro_music_settings::highlightIdx" type="int" value="0" />
+    <preference key="retro_music_settings::sortBy" type="int" value="9" />
+    <preference key="retro_music_settings::songInfo" type="boolean" value="true" />
+    <preference key="retro_music_settings::artistSeparators" type="string" value=",&amp;;" />
+    <preference key="retro_music_settings::pauseOnUnplug" type="boolean" value="true" />
+    <preference key="retro_music_settings::gridColumns" type="int" value="2" />
+    <preference key="retro_music_settings::keepScreenOn" type="boolean" value="false" />
+    <preference key="retro_music_settings::restoreQueue" type="boolean" value="true" />
+    <preference key="retro_music_settings::coverSize" type="int" value="1" />
+    <preference key="retro_music_settings::highlightAlpha" type="int" value="24" />
+    <preference key="retro_music_settings::lastTab" type="int" value="1" />
+    <preference key="retro_music_settings::useMediaStoreArt" type="boolean" value="true" />
+    <preference key="retro_music_settings::lyricsAuto" type="boolean" value="true" />
+    <preference key="retro_music_settings::materialYou" type="boolean" value="false" />
+    <preference key="retro_music_settings::homeLastAdded" type="boolean" value="true" />
+    <preference key="retro_music_settings::seeAll" type="boolean" value="true" />
+    <preference key="retro_music_settings::fontBold" type="boolean" value="false" />
+    <preference key="retro_music_settings::tabOrder" type="string" value="4,1,5,0,2,3" />
+    <preference key="retro_music_settings::customFontName" type="string" value="" />
+    <preference key="retro_music_settings::accentIdx" type="int" value="0" />
+    <preference key="retro_music_settings::autoPlay" type="boolean" value="false" />
+    <preference key="retro_music_settings::swipeCover" type="boolean" value="true" />
+    <preference key="retro_music_settings::fontScale" type="int" value="100" />
+    <preference key="retro_music_settings::audioFade" type="boolean" value="false" />
+    <preference key="retro_music_settings::sortDesc" type="boolean" value="true" />
+    <preference key="retro_music_settings::cacheImages" type="boolean" value="true" />
+    <preference key="retro_music_settings::showSongDuration" type="boolean" value="true" />
+    <preference key="retro_music_settings::themeSeed" type="int" value="0" />
+    <preference key="retro_music_settings::volumeSlider" type="boolean" value="false" />
+    <preference key="retro_music_settings::excludedFolders" type="string" value="" />
+    <preference key="retro_music_settings::coverShape" type="int" value="0" />
+    <preference key="retro_music_settings::tabLabels" type="int" value="0" />
+    <preference key="retro_music_settings::lastAddedDays" type="int" value="0" />
+    <preference key="retro_music_settings::showExtraControls" type="boolean" value="true" />
+    <preference key="retro_music_settings::homeAlbums" type="boolean" value="true" />
+    <preference key="retro_music_settings::openMode" type="int" value="1" />
+    <preference key="retro_music_settings::keepShuffle" type="boolean" value="false" />
+    <preference key="retro_music_settings::showSongArt" type="boolean" value="true" />
+    <preference key="retro_music_settings::defaultTab" type="int" value="1" />
+    <preference key="retro_music_settings::showFavButton" type="boolean" value="true" />
+    <preference key="retro_music_settings::tabsMask2" type="int" value="50" />
+    <preference key="retro_music_settings::lockBlur" type="boolean" value="false" />
+    <preference key="retro_music_settings::homeRecent" type="boolean" value="true" />
+    <preference key="retro_music_settings::extraDark" type="boolean" value="false" />
+    <preference key="retro_music_settings::panelOpacity" type="int" value="65" />
+    <preference key="retro_music_settings::fontItalic" type="boolean" value="false" />
+    <preference key="retro_music_settings::npTheme" type="int" value="4" />
+    <preference key="retro_music_settings::openNowOnPlay2" type="boolean" value="false" />
   </preferences>
-  <database>
-    <networkConnections />
-  </database>
+  <database />
 </onlyPlaySettings>
