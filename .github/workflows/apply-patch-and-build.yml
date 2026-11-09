@@ -4,8 +4,6 @@ run-name: "${{ github.event_name == 'push' && format('Apply {0} {1}', join(githu
 
 on:
   push:
-    tags-ignore:
-      - '**'
     paths:
       - '*.zip'
   workflow_dispatch:
@@ -69,23 +67,8 @@ jobs:
       - run: chmod +x ./gradlew
       - run: ./gradlew assembleStandardDebug
 
-      # The APK goes to one reusable "latest-build" pre-release instead of Actions storage, so it never
-      # fills the 0.5 GB quota. Each build replaces the previous file.
-      - name: Publish APK to the latest-build release
-        run: |
-          set -e
-          mkdir -p out
-          cp app/build/outputs/apk/standard/debug/*arm64-v8a*.apk out/OnlyPlay-latest-arm64-v8a.apk
-          ls -lh out
-
-      - name: Update latest-build release
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
         with:
-          tag_name: latest-build
-          name: Latest build (test)
-          body: Newest test build made from the current code. Replaced by every build.
-          files: out/OnlyPlay-latest-arm64-v8a.apk
-          prerelease: true
-          draft: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: onlyplay-apk
+          path: app/build/outputs/apk/standard/debug/*arm64-v8a*.apk
+          if-no-files-found: error
