@@ -1,5 +1,6 @@
 package app.onlyplay.presentation.components
 
+import app.onlyplay.ui.theme.popupContainerColor
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.DropdownMenuItem
@@ -55,6 +56,7 @@ fun ExposedTextDropDownMenu(
     ExposedDropdownMenu(
       expanded = expanded,
       onDismissRequest = { expanded = false },
+      containerColor = popupContainerColor(),
       modifier = Modifier.heightIn(max = 300.dp),
     ) {
       options.forEach { option: String ->

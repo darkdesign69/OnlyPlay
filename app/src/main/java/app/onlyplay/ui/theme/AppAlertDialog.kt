@@ -47,3 +47,10 @@ fun AlertDialog(
     properties = properties,
   )
 }
+
+/**
+ * Background for menus and pop-ups: always solid (like the sort menu), so the text stays readable even
+ * when Customize Theme makes the app's panels see-through.
+ */
+@Composable
+fun popupContainerColor(): Color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f)

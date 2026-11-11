@@ -802,8 +802,8 @@ fun GestureHandler(
                   // Only activate if this is clearly a horizontal gesture
                   // and not conflicting with other gestures
                   if (gestureType == null && 
-                      abs(deltaX) > 30f && 
-                      abs(deltaX) > abs(deltaY) * 2f && // Must be strongly horizontal
+                      abs(deltaX) > 20f && 
+                      abs(deltaX) > abs(deltaY) * 1.5f && // Must be mostly horizontal
                       timeSinceStart > 100L && // Avoid conflicts with double-tap
                       !isLongPressing && // Don't conflict with long press
                       !isDynamicSpeedControlActive && // Don't conflict with speed control
@@ -826,7 +826,8 @@ fun GestureHandler(
 
                   if (gestureType == "horizontal_seek" && hasStartedSeeking) {
                     // Calculate seek amount based on horizontal movement
-                    val seekAmount = deltaX * seekSensitivity
+                    // Times 3 so a short, normal swipe skips a few seconds (a swipe across the screen is about a minute)
+                    val seekAmount = deltaX * seekSensitivity * 3f
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
                     val maxDuration = duration?.toFloat() ?: 0f
                     val clampedPosition = targetPosition.coerceAtMost(maxDuration)

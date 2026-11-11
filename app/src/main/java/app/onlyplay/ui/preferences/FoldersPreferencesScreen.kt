@@ -1,5 +1,6 @@
 package app.onlyplay.ui.preferences
 
+import app.onlyplay.ui.theme.popupContainerColor
 import android.app.Application
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -382,6 +383,7 @@ private fun AddFolderDialog(
         DropdownMenu(
           expanded = showDropdown,
           onDismissRequest = { showDropdown = false },
+          containerColor = popupContainerColor(),
         ) {
           DropdownMenuItem(
             text = { Text(stringResource(R.string.select_all)) },

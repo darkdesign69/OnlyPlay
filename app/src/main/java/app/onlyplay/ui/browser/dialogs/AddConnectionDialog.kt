@@ -1,5 +1,6 @@
 package app.onlyplay.ui.browser.dialogs
 
+import app.onlyplay.ui.theme.popupContainerColor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -129,6 +130,7 @@ fun AddConnectionSheet(
                 ExposedDropdownMenu(
                   expanded = protocolMenuExpanded,
                   onDismissRequest = { protocolMenuExpanded = false },
+                  containerColor = popupContainerColor(),
                 ) {
                   NetworkProtocol.entries.forEach { proto ->
                     DropdownMenuItem(

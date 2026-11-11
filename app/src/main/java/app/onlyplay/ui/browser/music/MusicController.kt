@@ -912,6 +912,9 @@ object MusicController {
 
   private fun loadPrefs() {
     val p = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    // Repeat and shuffle are remembered on their own, so they come back even when no queue was saved
+    repeat = p.getInt("q_repeat", 0).coerceIn(0, 2)
+    shuffle = p.getBoolean("q_shuffle", false)
     favorites = p.getString("fav", "")!!.split(",").mapNotNull { it.toLongOrNull() }.toSet()
     history = p.getString("history", "")!!.split(",").mapNotNull { it.toLongOrNull() }
     val map = linkedMapOf<String, List<Long>>()

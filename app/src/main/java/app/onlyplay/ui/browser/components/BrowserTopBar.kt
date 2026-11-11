@@ -1,5 +1,6 @@
 package app.onlyplay.ui.browser.components
 
+import app.onlyplay.ui.theme.popupContainerColor
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -332,6 +333,7 @@ private fun SelectionTopBar(
         DropdownMenu(
           expanded = showDropdown,
           onDismissRequest = { showDropdown = false },
+          containerColor = popupContainerColor(),
         ) {
           if (onSelectAll != null) {
             DropdownMenuItem(
