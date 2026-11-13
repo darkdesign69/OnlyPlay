@@ -26,6 +26,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import kotlin.math.roundToInt
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material3.Button
@@ -444,21 +449,43 @@ private fun LabeledSlider(
   value: Float,
   onValueChange: (Float) -> Unit,
 ) {
-  Row(
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(12.dp),
-  ) {
-    Text(
-      text = label,
-      style = MaterialTheme.typography.bodyLarge,
-      color = MaterialTheme.colorScheme.onSurface,
-      modifier = Modifier.padding(end = 4.dp),
-    )
+  val percent = (value * 100f).roundToInt().coerceIn(0, 100)
+  Column {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        text = label,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.weight(1f),
+      )
+      // Minus and plus change it by 1% at a time
+      IconButton(
+        onClick = { onValueChange(((percent - 1) / 100f).coerceIn(0f, 1f)) },
+        modifier = Modifier.size(36.dp),
+      ) {
+        Icon(Icons.Filled.Remove, contentDescription = "Decrease $label")
+      }
+      Text(
+        text = "$percent%",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.width(56.dp),
+      )
+      IconButton(
+        onClick = { onValueChange(((percent + 1) / 100f).coerceIn(0f, 1f)) },
+        modifier = Modifier.size(36.dp),
+      ) {
+        Icon(Icons.Filled.Add, contentDescription = "Increase $label")
+      }
+    }
     Slider(
       value = value,
       onValueChange = onValueChange,
       valueRange = 0f..1f,
-      modifier = Modifier.weight(1f),
+      modifier = Modifier.fillMaxWidth(),
     )
   }
 }
