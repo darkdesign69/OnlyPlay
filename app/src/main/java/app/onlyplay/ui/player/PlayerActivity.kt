@@ -1791,8 +1791,8 @@ class PlayerActivity :
 
       // Apply saved aspect ratio setting
       withContext(Dispatchers.Main) {
-        val savedAspect = playerPreferences.defaultVideoAspect.get()
-        val savedCustomRatio = playerPreferences.defaultCustomAspectRatio.get()
+        val savedAspect = VideoAspect.Fit // every video starts at Fit Screen
+        val savedCustomRatio = -1.0
         
         if (savedCustomRatio > 0) {
           // Apply custom aspect ratio

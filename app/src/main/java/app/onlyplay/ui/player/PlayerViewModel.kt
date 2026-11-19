@@ -220,11 +220,11 @@ class PlayerViewModel(
   val videoZoom: StateFlow<Float> = _videoZoom.asStateFlow()
 
   // Video aspect ratio (now persisted via preferences)
-  private val _videoAspect = MutableStateFlow(playerPreferences.defaultVideoAspect.get())
+  private val _videoAspect = MutableStateFlow(VideoAspect.Fit)
   val videoAspect: StateFlow<VideoAspect> = _videoAspect.asStateFlow()
 
   // Current aspect ratio value (for custom ratios and tracking)
-  private val _currentAspectRatio = MutableStateFlow(playerPreferences.defaultCustomAspectRatio.get())
+  private val _currentAspectRatio = MutableStateFlow(-1.0)
   val currentAspectRatio: StateFlow<Double> = _currentAspectRatio.asStateFlow()
 
   // Timer
@@ -497,8 +497,8 @@ class PlayerViewModel(
       scanLocalSubtitles(mediaTitle)
 
       // 1. Reset Aspect Ratio to saved preference
-      val savedAspect = playerPreferences.defaultVideoAspect.get()
-      val savedCustomRatio = playerPreferences.defaultCustomAspectRatio.get()
+      val savedAspect = VideoAspect.Fit // every video starts at Fit Screen
+      val savedCustomRatio = -1.0
       
       if (savedCustomRatio > 0) {
         // Apply saved custom aspect ratio
