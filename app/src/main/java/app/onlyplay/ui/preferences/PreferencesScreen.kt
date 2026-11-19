@@ -162,7 +162,6 @@ object PreferencesScreen : Screen {
           item {
             PreferenceTileRow(
               PrefTile("Playlists", "Your video playlists", Icons.AutoMirrored.Outlined.PlaylistPlay) { backstack.add(PlaylistScreen) },
-              PrefTile("Network", "Stream from network shares and links", Icons.Outlined.Language) { backstack.add(NetworkStreamingScreen) },
             )
           }
 

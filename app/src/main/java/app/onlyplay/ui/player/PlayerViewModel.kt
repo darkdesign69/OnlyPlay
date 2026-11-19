@@ -1019,11 +1019,9 @@ class PlayerViewModel(
       }
     }
 
-    // Update the state and persist to preferences
+    // Only this video: the choice is not saved, so the next video starts from the normal setting again
     _videoAspect.value = aspect
     _currentAspectRatio.value = -1.0 // Reset custom ratio when using standard modes
-    playerPreferences.defaultVideoAspect.set(aspect)
-    playerPreferences.defaultCustomAspectRatio.set(-1.0)
 
     // Notify the UI
     if (showUpdate) {
@@ -1035,7 +1033,6 @@ class PlayerViewModel(
     MPVLib.setPropertyDouble("panscan", 0.0)
     MPVLib.setPropertyDouble("video-aspect-override", ratio)
     _currentAspectRatio.value = ratio
-    playerPreferences.defaultCustomAspectRatio.set(ratio)
     playerUpdate.value = PlayerUpdates.AspectRatio
   }
 

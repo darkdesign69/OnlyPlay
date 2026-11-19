@@ -88,6 +88,7 @@ fun PlayLinkSheet(
     onDismissRequest = handleDismiss,
     sheetState = sheetState,
     dragHandle = { BottomSheetDefaults.DragHandle() },
+    containerColor = app.onlyplay.ui.theme.popupContainerColor(),
     modifier = modifier,
   ) {
     Column(

@@ -52,7 +52,7 @@ fun DeleteConfirmationDialog(
         Card(
           colors =
             CardDefaults.cardColors(
-              containerColor = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.errorContainer, 0.5f).copy(alpha = 1f),
+              containerColor = androidx.compose.ui.graphics.lerp(app.onlyplay.ui.theme.popupContainerColor(), MaterialTheme.colorScheme.errorContainer, 0.5f).copy(alpha = 1f),
             ),
           shape = MaterialTheme.shapes.extraLarge,
           modifier = Modifier.fillMaxWidth(),
@@ -70,7 +70,7 @@ fun DeleteConfirmationDialog(
           Card(
             colors =
               CardDefaults.cardColors(
-                containerColor = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.primaryContainer, 0.4f).copy(alpha = 1f),
+                containerColor = androidx.compose.ui.graphics.lerp(app.onlyplay.ui.theme.popupContainerColor(), MaterialTheme.colorScheme.primaryContainer, 0.4f).copy(alpha = 1f),
               ),
             shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier.fillMaxWidth(),

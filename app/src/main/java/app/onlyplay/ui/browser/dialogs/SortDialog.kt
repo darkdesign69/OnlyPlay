@@ -192,7 +192,7 @@ fun SortDialog(
           Text("Done", fontWeight = FontWeight.Bold)
         }
       },
-      containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+      containerColor = app.onlyplay.ui.theme.popupContainerColor(),
       tonalElevation = 6.dp,
       shape = RoundedCornerShape(16.dp),
       modifier = modifier.widthIn(min = 280.dp),

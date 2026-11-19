@@ -6,7 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 
 /**
@@ -23,11 +25,11 @@ fun AlertDialog(
   title: @Composable (() -> Unit)? = null,
   text: @Composable (() -> Unit)? = null,
   shape: Shape = AlertDialogDefaults.shape,
-  containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f),
+  containerColor: Color = popupContainerColor(),
   iconContentColor: Color = AlertDialogDefaults.iconContentColor,
   titleContentColor: Color = AlertDialogDefaults.titleContentColor,
   textContentColor: Color = AlertDialogDefaults.textContentColor,
-  tonalElevation: Dp = AlertDialogDefaults.TonalElevation,
+  tonalElevation: Dp = 0.dp,
   properties: DialogProperties = DialogProperties(),
 ) {
   androidx.compose.material3.AlertDialog(
@@ -53,4 +55,8 @@ fun AlertDialog(
  * when Customize Theme makes the app's panels see-through.
  */
 @Composable
-fun popupContainerColor(): Color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f)
+fun popupContainerColor(): Color {
+  // One fixed, fully solid colour (the same slate as the Sort menu), whatever the theme or background
+  val dark = MaterialTheme.colorScheme.onSurface.luminance() > 0.5f
+  return if (dark) Color(0xFF262D39) else Color(0xFFEDEFF5)
+}

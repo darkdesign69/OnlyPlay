@@ -36,8 +36,8 @@ fun ConfirmDialog(
   ) {
     Surface(
       shape = MaterialTheme.shapes.extraLarge,
-      color = AlertDialogDefaults.containerColor,
-      tonalElevation = AlertDialogDefaults.TonalElevation,
+      color = app.onlyplay.ui.theme.popupContainerColor(),
+      tonalElevation = 0.dp,
     ) {
       Column(
         modifier = Modifier.padding(28.dp),

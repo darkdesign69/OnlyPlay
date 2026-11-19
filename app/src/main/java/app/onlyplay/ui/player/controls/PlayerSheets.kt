@@ -170,12 +170,12 @@ fun PlayerSheets(
     }
 
     Sheets.More -> {
-      MoreSheet(
+      app.onlyplay.ui.player.controls.components.sheets.MxMenuSheet(
         remainingTime = sleepTimerTimeRemaining,
         onStartTimer = onStartSleepTimer,
+        onShowSheet = onShowSheet,
+        onOpenPanel = onOpenPanel,
         onDismissRequest = onDismissRequest,
-        onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
-        onAnime4KChanged = { },
       )
     }
 

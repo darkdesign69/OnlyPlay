@@ -1775,6 +1775,14 @@ class PlayerActivity :
       // Apply default zoom only if there's no saved state
       if (!hasState) {
         withContext(Dispatchers.Main) {
+          // A video with nothing saved starts from the normal speed and delays, not from what the
+          // previous video was set to
+          runCatching {
+            MPVLib.setPropertyDouble("speed", playerPreferences.defaultSpeed.get().toDouble())
+            MPVLib.setPropertyDouble("audio-delay", audioPreferences.defaultAudioDelay.get() / 1000.0)
+            MPVLib.setPropertyDouble("sub-delay", subtitlesPreferences.defaultSubDelay.get() / 1000.0)
+            MPVLib.setPropertyDouble("secondary-sub-delay", subtitlesPreferences.defaultSubDelay.get() / 1000.0)
+          }
           val zoomPreference = playerPreferences.defaultVideoZoom.get()
           MPVLib.setPropertyDouble("video-zoom", zoomPreference.toDouble())
           viewModel.setVideoZoom(zoomPreference)
